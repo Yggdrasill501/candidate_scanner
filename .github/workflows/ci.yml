@@ -1,0 +1,53 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: cp .env.example .env
+
+      # The same docker-compose.yml a developer runs, so CI and local never drift.
+      - name: Database up and migrated
+        run: pnpm db:up && pnpm db:migrate
+
+      # A migration that shipped without its type update is invisible until a query breaks.
+      - name: Generated schema is in sync
+        run: |
+          pnpm db:codegen
+          if ! git diff --quiet -- packages/db/src/schema.ts; then
+            echo "::error::packages/db/src/schema.ts is out of date. Run 'pnpm db:codegen' and commit it."
+            git diff -- packages/db/src/schema.ts
+            exit 1
+          fi
+
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm format:check
+      - run: pnpm build
+
+      # A down() that has never run is a down() that does not work.
+      - name: Migrations are reversible
+        run: |
+          pnpm db:migrate:down
+          pnpm db:migrate
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v

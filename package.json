@@ -1,0 +1,35 @@
+{
+  "name": "koho-volim",
+  "private": true,
+  "packageManager": "pnpm@11.28.8",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:all": "pnpm db:up && pnpm db:migrate && pnpm dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "check": "turbo run typecheck lint --continue && pnpm format:check",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:up": "docker compose up -d --wait",
+    "db:down": "docker compose down",
+    "db:reset": "docker compose down -v && pnpm db:up && pnpm db:migrate",
+    "db:migrate": "pnpm --filter @repo/db migrate",
+    "db:migrate:down": "pnpm --filter @repo/db migrate:down",
+    "db:migrate:make": "pnpm --filter @repo/db migrate:make",
+    "db:migrate:status": "pnpm --filter @repo/db migrate:status",
+    "db:codegen": "pnpm --filter @repo/db codegen",
+    "pipeline": "pnpm --filter @repo/pipeline pipeline"
+  },
+  "devDependencies": {
+    "eslint": "^9",
+    "eslint-config-next": "16.4.3",
+    "prettier": "^3.9.9",
+    "prettier-plugin-tailwindcss": "^0.8.1",
+    "turbo": "^2.11.10"
+  }
+}
