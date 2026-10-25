@@ -40,6 +40,8 @@ export function SearchBox({
   const [sel, setSel] = useState(-1);
   const [placeholder, setPlaceholder] = useState(d.placeholder);
 
+  const flat = res ? GROUPS.flatMap((g) => res[g]) : [];
+
   useEffect(() => {
     const term = q.trim();
     if (term.length < 2) return;
