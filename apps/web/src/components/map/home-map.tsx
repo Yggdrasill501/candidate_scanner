@@ -26,16 +26,12 @@ interface Tip {
 
 const key = (okres: string, name: string) => `${okres}|${slugify(name)}`;
 
-/** The search results page for a place; a click on the map or a chip opens it. */
-const resultsFor = (lang: Lang, text: string) =>
-  `/${lang}/hladat?q=${encodeURIComponent(text)}`;
-
 const classes = (...names: (string | false | null)[]) =>
   names.filter(Boolean).join(" ");
 
 /**
  * The homepage's interactive part: the line search, district chips and the Hranice map.
- * Hovering the map shows a tooltip; clicking a municipality or district opens its search results.
+ * Hovering the map shows a tooltip; clicking a municipality opens its ballot, a district its list of races.
  */
 export function HomeMap({
   lang,
@@ -80,8 +76,8 @@ export function HomeMap({
         labelFont: getComputedStyle(document.body).fontFamily,
         onClick(ok, ob) {
           const m = ob && ok ? byKey.current.get(key(ok, ob)) : undefined;
-          if (m) router.push(resultsFor(lang, m.name));
-          else if (ok) router.push(resultsFor(lang, t(lang).search.okres(ok)));
+          if (m) router.push(`/${lang}/obec/${m.slug}`);
+          else if (ok) router.push(`/${lang}/kandidati#${slugify(ok)}`);
         },
         onHover(ok, ob) {
           setHoverOk(ok);
@@ -179,7 +175,7 @@ export function HomeMap({
             <Link
               key={name}
               className={classes("chip", "glass", hoverOk === name && "on")}
-              href={resultsFor(lang, t(lang).search.okres(name))}
+              href={`/${lang}/kandidati#${slugify(name)}`}
               onMouseEnter={() => map.current?.hover(name)}
               onMouseLeave={() => map.current?.hover(null)}
             >

@@ -54,8 +54,8 @@ const sk = {
     tipCount: "Obcí",
     tipArea: "Rozloha",
     tipClick: "Kliknutím",
-    tipOpenList: "hľadať",
-    tipOpenBallot: "hľadať",
+    tipOpenList: "zoznam",
+    tipOpenBallot: "môj lístok",
     tipCandidates: "Kandidátov",
     ballotTitle: "Môj hlasovací lístok",
     ballotHint:
@@ -321,8 +321,8 @@ const en: Dict = {
     tipCount: "Municipalities",
     tipArea: "Area",
     tipClick: "Click",
-    tipOpenList: "search",
-    tipOpenBallot: "search",
+    tipOpenList: "list",
+    tipOpenBallot: "my ballot",
     tipCandidates: "Candidates",
     ballotTitle: "My ballot",
     ballotHint:
@@ -588,8 +588,8 @@ const hu: Dict = {
     tipCount: "Települések",
     tipArea: "Terület",
     tipClick: "Kattintásra",
-    tipOpenList: "keresés",
-    tipOpenBallot: "keresés",
+    tipOpenList: "lista",
+    tipOpenBallot: "szavazólapom",
     tipCandidates: "Jelöltek",
     ballotTitle: "Az én szavazólapom",
     ballotHint:
