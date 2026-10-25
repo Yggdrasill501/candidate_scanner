@@ -699,6 +699,10 @@ footer.site a {
   font-size: 13px;
   color: var(--mute);
   margin: 0;
+  text-decoration: none;
+}
+a.pill:hover {
+  color: var(--ink);
 }
 .pill b {
   color: var(--ink);
@@ -1067,6 +1071,41 @@ a.ballot-card:hover {
 .results-status a {
   color: var(--ink);
   text-underline-offset: 2px;
+}
+.results-race {
+  margin-top: 28px;
+}
+.results-race > header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+.results-race > header h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 500;
+}
+.results-race > header a {
+  font-size: 14px;
+  color: var(--mute);
+  text-decoration: none;
+}
+.results-race > header a:hover {
+  color: var(--ink);
+}
+.results-council {
+  margin-top: 40px;
+}
+.results-council h3 {
+  margin: 0 0 8px;
+  font-size: 1.15rem;
+  font-weight: 500;
+}
+.lede.tight {
+  margin-top: 0;
+  max-width: 42rem;
 }
 .list .nm.wide {
   grid-column: span 4;

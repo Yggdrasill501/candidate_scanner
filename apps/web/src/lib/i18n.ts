@@ -13,6 +13,7 @@ const sk = {
   tagline: "Každý kandidát v Nitrianskom kraji. Iba fakty so zdrojom.",
   nav: {
     label: "Hlavná navigácia",
+    results: "Výsledky volieb",
     candidates: "Kandidáti",
     method: "Metodika",
     sources: "Zdroje",
@@ -137,6 +138,20 @@ const sk = {
     resultsCached: "zobrazené z posledného uloženého snímku",
     resultsSource: "volbysr.sk",
     data: (date: string) => `Údaje MV SR k ${date}`,
+  },
+  resultsPage: {
+    title: "Výsledky volieb 2026",
+    lede: "Oficiálne výsledky Štatistického úradu SR pre Nitriansky samosprávny kraj. Bez hodnotenia, v poradí podľa hlasovacieho lístka.",
+    vuc: "Nitriansky samosprávny kraj",
+    governor: "Predseda NSK",
+    council: "Poslanci zastupiteľstva NSK",
+    councilHint:
+      "Výsledky po volebných obvodoch. Otvor obvod pre kandidátov a hlasy, keď ich ŠÚ SR zverejní.",
+    municipal: "Obce a mestá",
+    municipalHint:
+      "Výsledky starostov a poslancov sú na stránke každej voľby. Vyber obec na mape alebo v zozname kandidátov.",
+    openRace: "Otvoriť voľbu",
+    openMunicipal: "Zoznam obcí",
   },
   ballot: {
     title: (name: string) => `Hlasovací lístok · ${name}`,
@@ -279,6 +294,7 @@ const en: Dict = {
   tagline: "Every candidate in the Nitra region. Only facts, with sources.",
   nav: {
     label: "Main navigation",
+    results: "Election results",
     candidates: "Candidates",
     method: "Methodology",
     sources: "Sources",
@@ -406,6 +422,20 @@ const en: Dict = {
     resultsCached: "shown from the last stored snapshot",
     resultsSource: "volbysr.sk",
     data: (date: string) => `MV SR data as of ${date}`,
+  },
+  resultsPage: {
+    title: "2026 election results",
+    lede: "Official results from the Statistical Office of the SR for the Nitra self-governing region. No rankings — ballot order only.",
+    vuc: "Nitra self-governing region",
+    governor: "NSK chair",
+    council: "NSK regional council",
+    councilHint:
+      "Results by electoral district. Open a district for candidates and votes once the Statistical Office publishes them.",
+    municipal: "Municipalities",
+    municipalHint:
+      "Mayor and council results are on each race page. Pick a municipality on the map or in the candidate list.",
+    openRace: "Open race",
+    openMunicipal: "Municipality list",
   },
   ballot: {
     title: (name: string) => `Ballot · ${name}`,
@@ -546,6 +576,7 @@ const hu: Dict = {
   tagline: "A Nyitrai kerület minden jelöltje. Csak tények, forrással.",
   nav: {
     label: "Fő navigáció",
+    results: "Választási eredmények",
     candidates: "Jelöltek",
     method: "Módszertan",
     sources: "Források",
@@ -644,6 +675,20 @@ const hu: Dict = {
     resultsCached: "az utolsó mentett pillanatképből",
     resultsSource: "volbysr.sk",
     data: (date: string) => `SK Belügyminisztérium adatai, ${date}`,
+  },
+  resultsPage: {
+    title: "2026-os választási eredmények",
+    lede: "A Statisztikai Hivatal hivatalos eredményei a Nyitrai önkormányzati kerületre. Rangsor nélkül, csak a szavazólap sorrendje.",
+    vuc: "Nyitrai önkormányzati kerület",
+    governor: "NSK elnök",
+    council: "NSK képviselő-testület",
+    councilHint:
+      "Eredmények választókerületenként. Nyiss meg egy kerületet a jelöltekhez és szavazatokhoz, amint a Statisztikai Hivatal közzéteszi őket.",
+    municipal: "Települések",
+    municipalHint:
+      "A polgármesteri és képviselői eredmények az egyes választások oldalán vannak. Válassz települést a térképen vagy a jelöltlistán.",
+    openRace: "Választás megnyitása",
+    openMunicipal: "Településlista",
   },
   ballot: {
     title: (name: string) => `Szavazólap · ${name}`,

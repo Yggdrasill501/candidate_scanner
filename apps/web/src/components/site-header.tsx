@@ -7,6 +7,7 @@ import { LANGS, t, type Lang } from "@/lib/i18n";
 import { SearchBox } from "./search-box";
 
 const NAV = [
+  ["vysledky", "results"],
   ["kandidati", "candidates"],
   ["metodika", "method"],
   ["zdroje", "sources"],

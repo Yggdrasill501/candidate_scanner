@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { t, type Lang } from "@/lib/i18n";
 
@@ -33,10 +34,12 @@ export function Countdown({ lang }: { lang: Lang }) {
 
   let label = d.countdownBefore;
   let value = "…";
+  let closed = false;
   if (now !== null) {
     if (now >= CLOSES) {
       label = d.closed;
       value = "";
+      closed = true;
     } else {
       const open = now >= OPENS;
       label = open ? d.countdownOpen : d.countdownBefore;
@@ -44,11 +47,26 @@ export function Countdown({ lang }: { lang: Lang }) {
       value = `${p.d ? `${p.d} d ` : ""}${p.h} h ${pad(p.m)} min ${pad(p.s)} s`;
     }
   }
-  return (
-    <p className="pill glass rise d1">
+
+  const body = (
+    <>
       <span className="dot" aria-hidden="true" />
       <span>{label}</span>
       {value && <b>{value}</b>}
-    </p>
+    </>
   );
+
+  if (closed) {
+    return (
+      <Link
+        className="pill glass rise d1"
+        href={`/${lang}/vysledky`}
+        aria-label={`${label} · ${t(lang).nav.results}`}
+      >
+        {body}
+      </Link>
+    );
+  }
+
+  return <p className="pill glass rise d1">{body}</p>;
 }
