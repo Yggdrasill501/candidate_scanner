@@ -149,9 +149,9 @@ const sk = {
       "Výsledky po volebných obvodoch. Otvor obvod pre kandidátov a hlasy, keď ich ŠÚ SR zverejní.",
     municipal: "Obce a mestá",
     municipalHint:
-      "Výsledky starostov a poslancov sú na stránke každej voľby. Vyber obec na mape alebo v zozname kandidátov.",
+      "Výsledky starostov a poslancov sú na stránke každej obce. Vyber obec na mape alebo v zozname obcí.",
     openRace: "Otvoriť voľbu",
-    openMunicipal: "Zoznam obcí",
+    openMunicipal: "Vyber obec",
   },
   ballot: {
     title: (name: string) => `Hlasovací lístok · ${name}`,
@@ -165,6 +165,13 @@ const sk = {
       "Okres Nové Zámky má dva volebné obvody do zastupiteľstva NSK (4 a 6). Ktorý je tvoj, uvádza hlasovací lístok.",
     open: "Otvoriť voľbu",
     district: "Okres",
+    resultsLede:
+      "Oficiálne výsledky Štatistického úradu SR pre túto obec. Bez hodnotenia, v poradí podľa hlasovacieho lístka.",
+    pickObvodForResults:
+      "Vyber volebný obvod pre podrobné výsledky poslancov, alebo otvor jednotlivé voľby nižšie.",
+    nskResults: "Predseda a poslanci NSK",
+    ballotBrowse: "Hlasovací lístok",
+    toRegionalResults: "Výsledky NSK",
   },
   profile: {
     age: (n: number) => `${n} rokov`,
@@ -433,9 +440,9 @@ const en: Dict = {
       "Results by electoral district. Open a district for candidates and votes once the Statistical Office publishes them.",
     municipal: "Municipalities",
     municipalHint:
-      "Mayor and council results are on each race page. Pick a municipality on the map or in the candidate list.",
+      "Mayor and council results are on each municipality page. Pick a town on the map or in the municipality list.",
     openRace: "Open race",
-    openMunicipal: "Municipality list",
+    openMunicipal: "Pick a municipality",
   },
   ballot: {
     title: (name: string) => `Ballot · ${name}`,
@@ -449,6 +456,13 @@ const en: Dict = {
       "The Nové Zámky district has two NSK electoral districts (4 and 6). Your ballot shows which one is yours.",
     open: "Open race",
     district: "District",
+    resultsLede:
+      "Official Statistical Office results for this municipality. No rankings — ballot order only.",
+    pickObvodForResults:
+      "Pick an electoral district for detailed council results, or open individual races below.",
+    nskResults: "NSK chair and council",
+    ballotBrowse: "Ballot",
+    toRegionalResults: "NSK results",
   },
   profile: {
     ...sk.profile,
@@ -686,9 +700,9 @@ const hu: Dict = {
       "Eredmények választókerületenként. Nyiss meg egy kerületet a jelöltekhez és szavazatokhoz, amint a Statisztikai Hivatal közzéteszi őket.",
     municipal: "Települések",
     municipalHint:
-      "A polgármesteri és képviselői eredmények az egyes választások oldalán vannak. Válassz települést a térképen vagy a jelöltlistán.",
+      "A polgármesteri és képviselői eredmények az egyes települések oldalán vannak. Válassz települést a térképen vagy a listán.",
     openRace: "Választás megnyitása",
-    openMunicipal: "Településlista",
+    openMunicipal: "Válassz települést",
   },
   ballot: {
     title: (name: string) => `Szavazólap · ${name}`,
@@ -702,6 +716,13 @@ const hu: Dict = {
       "Az Érsekújvári járásban két NSK-választókerület van (4 és 6). Hogy melyik a tiéd, a szavazólapon látod.",
     open: "Választás megnyitása",
     district: "Járás",
+    resultsLede:
+      "A Statisztikai Hivatal hivatalos eredményei erre a településre. Rangsor nélkül, csak a szavazólap sorrendje.",
+    pickObvodForResults:
+      "Válassz választókerületet a képviselői eredményekhez, vagy nyisd meg az egyes választásokat lent.",
+    nskResults: "NSK elnök és képviselők",
+    ballotBrowse: "Szavazólap",
+    toRegionalResults: "NSK eredmények",
   },
   profile: {
     ...en.profile,

@@ -113,8 +113,11 @@ async function ResultsBody({ lang }: { lang: Lang }) {
           </div>
         </header>
         <p>
-          <Link className="pillbtn glass" href={`/${lang}/kandidati`}>
+          <Link className="pillbtn glass" href={`/${lang}`}>
             {d.resultsPage.openMunicipal} →
+          </Link>{" "}
+          <Link className="pillbtn glass" href={`/${lang}/kandidati`}>
+            {d.nav.candidates} →
           </Link>
         </p>
       </section>
