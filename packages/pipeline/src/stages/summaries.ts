@@ -1,15 +1,16 @@
 import { createHash } from "node:crypto";
 import { db, jsonb, sql } from "@repo/db";
 import { claude } from "../lib/claude";
+import { codex } from "../lib/codex";
 import { mapPool } from "../lib/pool";
 import type { Stats } from "../lib/run";
 
-export const SUMMARY_PROMPT_VERSION = "summary-v2";
+export const SUMMARY_PROMPT_VERSION = "summary-v3";
 const BATCH = 8;
 const LANGS = ["sk", "en", "hu"] as const;
 type Lang = (typeof LANGS)[number];
 
-const SYSTEM = `You write short, strictly neutral summaries of public records about candidates in the
+export const SYSTEM = `You write short, strictly neutral summaries of public records about candidates in the
 2026 Slovak municipal and regional elections. Rules:
 - Use ONLY the items given for that person. No outside knowledge, no guesses, no inference.
 - 3 to 5 sentences per language (fewer if there is little data). Plain statements of record.
@@ -25,9 +26,12 @@ const SYSTEM = `You write short, strictly neutral summaries of public records ab
   registration as a beneficial owner (konečný užívateľ výhod) in RPVS.
 - Years and counts must come from the item fields ("from_year", "to_year", "count"); never turn
   a date range into a single year.
-- Avoid gendered pronouns and do not infer gender from names. In Slovak and Hungarian prefer
-  impersonal or name-based constructions ("Kandidatúra…", "Zvolenie…", "V registroch je…");
-  use a gendered form only when the item itself gives it (e.g. occupation "ekonómka").
+- Never infer gender from a name. Slovak past-tense verbs and adjectives carry gender, so in Slovak
+  do NOT use them with the person as subject ("bol zvolený", "bola zvolená", "je uvedený").
+  Use noun phrases and impersonal forms instead, e.g. "Zvolenie za poslanca mestského
+  zastupiteľstva v Nitre v roku 2022 (447 hlasov).", "V registroch: 11 rolí v 6 organizáciách.",
+  "Funkcia: člen dozorného orgánu, Službyt Nitra, s.r.o.". Office names stay as given in items.
+  English: use the person's name or "the candidate", never he/she. Hungarian has no gender.
 - Slovak (sk), English (en) and Hungarian (hu) versions say the same thing.
 Answer only with the requested JSON.`;
 
@@ -36,6 +40,20 @@ const RACE_SK: Record<string, string> = {
   municipal_council: "poslanec obecného / mestského zastupiteľstva",
   regional_governor: "predseda Nitrianskeho samosprávneho kraja",
   regional_council: "poslanec zastupiteľstva Nitrianskeho samosprávneho kraja",
+};
+
+const ELECTION_LABEL: Record<string, string> = {
+  OSO2022: "komunálne voľby 2022",
+  OSO2018: "komunálne voľby 2018",
+  VUC2022: "voľby do VÚC 2022",
+  VUC2017: "voľby do VÚC 2017",
+};
+
+const ROLE_LABEL: Record<string, string> = {
+  beneficial_owner: "konečný užívateľ výhod (RPVS)",
+  public_sector_partner: "partner verejného sektora (RPVS)",
+  statutory_body: "štatutárny orgán",
+  stakeholder: "spoločník",
 };
 
 interface Ref {
@@ -48,7 +66,7 @@ interface Ref {
 type Sentence = { text: string; refs: string[] };
 type SummaryOutput = { people: ({ person: string } & Record<Lang, Sentence[]>)[] };
 
-interface PersonInput {
+export interface PersonInput {
   personId: string;
   name: string;
   age: number;
@@ -58,6 +76,15 @@ interface PersonInput {
   hash: string;
 }
 
+/** A date column (pg returns Date) as "yyyy-mm-dd"; "" when missing. */
+// pg parses DATE columns as local midnight, so read local components (toISOString can shift the day).
+const isoDate = (d: unknown): string =>
+  d instanceof Date
+    ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+    : d == null
+      ? ""
+      : String(d);
+
 function match(reason: Record<string, unknown> | null): string {
   if (!reason) return "confirmed";
   if (reason.ambiguous) return "ambiguous";
@@ -65,7 +92,7 @@ function match(reason: Record<string, unknown> | null): string {
   return matched.length <= 1 ? "name_only" : "confirmed";
 }
 
-async function inputs(): Promise<PersonInput[]> {
+export async function inputs(): Promise<PersonInput[]> {
   const people = await db.selectFrom("person").select(["id", "given_name", "family_name", "age_2026"]).execute();
   const candidacies = await db
     .selectFrom("candidacy")
@@ -123,12 +150,12 @@ async function inputs(): Promise<PersonInput[]> {
     const pay = (f: (typeof fs)[number]) => f.payload as Record<string, unknown>;
     const reason = (f: (typeof fs)[number]) => f.match_reason as Record<string, unknown>;
 
-    for (const f of fs.filter((f) => f.type === "past_candidacy").sort((a, b) => String(a.occurred_from).localeCompare(String(b.occurred_from)))) {
+    for (const f of fs.filter((f) => f.type === "past_candidacy").sort((a, b) => isoDate(a.occurred_from).localeCompare(isoDate(b.occurred_from)))) {
       const d = pay(f);
       add(
         {
           kind: "past_candidacy",
-          election: d.election_code,
+          election: ELECTION_LABEL[String(d.election_code)] ?? d.election_code,
           race: RACE_SK[String(d.race_kind)],
           municipality: d.municipality_name,
           party: d.party,
@@ -159,7 +186,7 @@ async function inputs(): Promise<PersonInput[]> {
           {
             kind: "business_role",
             organisation: d.organisation,
-            role: d.role_label ?? d.role,
+            role: d.role_label ?? ROLE_LABEL[String(d.role)] ?? d.role,
             since: f.occurred_from,
             ...(d.role === "beneficial_owner" && d.public_official
               ? { rpvs_note: "registered in RPVS as beneficial owner due to a management position in a public company; not ownership" }
@@ -212,7 +239,7 @@ async function inputs(): Promise<PersonInput[]> {
     }
     const media = fs.filter((f) => f.type === "media_mention");
     if (media.length) {
-      const dates = media.map((f) => String(f.occurred_from)).filter((d) => d !== "null").sort();
+      const dates = media.map((f) => isoDate(f.occurred_from)).filter(Boolean).sort();
       add(
         { kind: "media_mentions", count: media.length, from_year: dates[0]?.slice(0, 4), to_year: dates.at(-1)?.slice(0, 4) },
         media.slice(0, 50).map((f) => f.id),
@@ -234,55 +261,133 @@ async function inputs(): Promise<PersonInput[]> {
   });
 }
 
-/** Fixed non-AI summary: used for people with only their 2026 candidacy, and as fallback. */
+/**
+ * Deterministic summary, no AI: one sentence per kind of record, numbers taken from the items.
+ * Used for everyone when SUMMARY_MODE=template, for people with only their 2026 candidacy, and as
+ * the fallback when an AI answer fails validation. No gendered grammar in any language.
+ */
 function template(p: PersonInput): Record<Lang, { text: string; refs: string[] }[]> {
-  const cands = p.refs.filter((r) => r.data.kind === "candidacy_2026");
+  const of = (kind: string) => p.refs.filter((r) => r.data.kind === kind);
+  const ids = (rs: Ref[]) => rs.map((r) => r.id);
+  const out: Record<Lang, { text: string; refs: string[] }[]> = { sk: [], en: [], hu: [] };
+  const say = (refs: Ref[], sk: string, en: string, hu: string) => {
+    if (refs.length === 0) return;
+    out.sk.push({ text: sk, refs: ids(refs) });
+    out.en.push({ text: en, refs: ids(refs) });
+    out.hu.push({ text: hu, refs: ids(refs) });
+  };
+
+  const cands = of("candidacy_2026");
   const race = (r: Ref) =>
     [r.data.race, r.data.municipality, r.data.district ? `obvod ${r.data.district}` : null].filter(Boolean).join(", ");
   const list = cands.map((r) => `${race(r)} (${r.data.party})`).join("; ");
-  const ids = cands.map((r) => r.id);
-  const others = p.refs.length > cands.length;
-  return {
-    sk: [
-      { text: `${p.name} (${p.age}) kandiduje vo voľbách 2026: ${list}.`, refs: ids },
-      { text: others ? "Ďalšie záznamy sú uvedené nižšie." : "V spracovaných zdrojoch nie sú k dispozícii ďalšie záznamy.", refs: ids },
-    ],
-    en: [
-      { text: `${p.name} (${p.age}) is a candidate in the 2026 elections: ${list}.`, refs: ids },
-      { text: others ? "Further records are listed below." : "The processed sources contain no further records.", refs: ids },
-    ],
-    hu: [
-      { text: `${p.name} (${p.age}) jelölt a 2026-os választásokon: ${list}.`, refs: ids },
-      { text: others ? "További adatok lent találhatók." : "A feldolgozott forrásokban nincs további adat.", refs: ids },
-    ],
-  };
+  say(cands, `${p.name} (${p.age}) – kandidatúra 2026: ${list}.`, `${p.name} (${p.age}) – 2026 candidacy: ${list}.`, `${p.name} (${p.age}) – 2026-os jelöltség: ${list}.`);
+
+  const past = of("past_candidacy");
+  if (past.length) {
+    const won = past.filter((r) => r.data.elected === true);
+    const years = [...new Set(won.map((r) => String(r.data.election).match(/\d{4}/)?.[0]).filter(Boolean))].join(", ");
+    say(
+      past,
+      `Predchádzajúce kandidatúry (2018–2022): ${past.length}, z toho zvolenie: ${won.length}${years ? ` (${years})` : ""}.`,
+      `Earlier candidacies (2018–2022): ${past.length}, elected: ${won.length}${years ? ` (${years})` : ""}.`,
+      `Korábbi jelöltségek (2018–2022): ${past.length}, ebből megválasztva: ${won.length}${years ? ` (${years})` : ""}.`,
+    );
+  }
+  const overview = of("business_roles_overview")[0];
+  if (overview) {
+    const d = overview.data;
+    say(
+      [overview],
+      `Registre (RPO, RPVS): ${d.total_roles} záznamov o podnikaní alebo funkciách v ${d.organisations} subjektoch, z toho ${d.current_roles} aktuálnych.`,
+      `Registers (RPO, RPVS): ${d.total_roles} business records or positions in ${d.organisations} entities, ${d.current_roles} of them current.`,
+      `Nyilvántartások (RPO, RPVS): ${d.total_roles} vállalkozási bejegyzés vagy tisztség ${d.organisations} szervezetben, ebből ${d.current_roles} jelenlegi.`,
+    );
+  }
+  const ngos = of("ngo_role");
+  say(ngos, `Register mimovládnych organizácií: ${ngos.length} funkcií.`, `Register of non-governmental organisations: ${ngos.length} positions.`, `Civil szervezetek nyilvántartása: ${ngos.length} tisztség.`);
+  const decl = of("asset_declaration")[0];
+  if (decl) {
+    say([decl], `Oznámenie verejného funkcionára za rok ${decl.data.year} je k dispozícii.`, `A public official's declaration for ${decl.data.year} is available.`, `Közfunkcionáriusi nyilatkozat ${decl.data.year}-re/-ra elérhető.`);
+  }
+  for (const a of of("council_attendance")) {
+    const d = a.data;
+    const from = String(d.term_from).slice(0, 4);
+    say([a], `${d.body}, obdobie od ${from}: účasť na ${d.votes_present} z ${d.votes_total} hlasovaní.`, `${d.body}, term from ${from}: present at ${d.votes_present} of ${d.votes_total} votes.`, `${d.body}, ${from}-tól kezdődő ciklus: jelen ${d.votes_total} szavazásból ${d.votes_present} alkalommal.`);
+  }
+  const media = of("media_mentions")[0];
+  if (media) {
+    const d = media.data;
+    say([media], `Mediálne zmienky: ${d.count} (${d.from_year}–${d.to_year}).`, `Media mentions: ${d.count} (${d.from_year}–${d.to_year}).`, `Médiaemlítések: ${d.count} (${d.from_year}–${d.to_year}).`);
+  }
+  if (out.sk.length === 1) {
+    say(cands, "V spracovaných zdrojoch nie sú k dispozícii ďalšie záznamy.", "The processed sources contain no further records.", "A feldolgozott forrásokban nincs további adat.");
+  }
+  // Keep within the 5-sentence limit: candidacy first, then the most specific records.
+  for (const l of LANGS) out[l] = out[l].slice(0, 5);
+  return out;
+}
+
+const SK_GENDERED =
+  /(?<!\p{L})(bol|bola|zvolen[ýá]|pôsobil[a]?|kandidoval[a]?|pracoval[a]?|získal[a]?|zastával[a]?|vykonával[a]?|hlasoval[a]?|zúčastnil[a]?)(?!\p{L})/iu;
+const EN_GENDERED = /(?<!\p{L})(he|she|his|her|him)(?!\p{L})/iu;
+const EVALUATIVE =
+  /(?<!\p{L})(úspešn\p{L}*|významn\p{L}*|kontroverzn\p{L}*|bohat\p{L}*|rozsiahl\p{L}*|successful\p{L}*|notabl\p{L}*|prominent|controversial|extensive\p{L}*|impressive|sikeres\p{L}*|jelentős\p{L}*)(?!\p{L})/iu;
+// Remarks about the data itself instead of the record, and item ids pasted into the text.
+const META = /(?<!\p{L})(r\d+|nečitateľn\p{L}*|chýbaj\p{L}*|unreadable|missing|olvashatatlan\p{L}*|hiányz\p{L}*)(?!\p{L})/iu;
+const QUALIFIER: Record<Lang, RegExp> = { sk: /zhod\p{L}* men/iu, en: /name match/iu, hu: /névegyezés/iu };
+
+/** Why an AI answer for one person cannot be stored; empty when it passes. */
+function problems(p: PersonInput, r: Record<Lang, Sentence[]> | undefined): string[] {
+  if (!r) return ["missing"];
+  const out: string[] = [];
+  const byId = new Map(p.refs.map((x) => [x.id, x]));
+  for (const l of LANGS) {
+    const ss = r[l] ?? [];
+    if (ss.length < 1 || ss.length > 5) out.push(`${l}: ${ss.length} sentences`);
+    for (const s of ss) {
+      if (!s.text.trim() || !s.refs.length || !s.refs.every((id) => byId.has(id))) out.push(`${l}: bad refs`);
+      // Every number must come from the cited items (or the name/age line).
+      const cited = JSON.stringify([p.name, p.age, ...s.refs.map((id) => byId.get(id)?.data)]);
+      for (const n of s.text.replace(/(\d) (\d{3})/g, "$1$2").match(/\d+/g) ?? []) if (!cited.includes(n)) out.push(`${l}: number ${n}`);
+      if (l === "sk" && SK_GENDERED.test(s.text)) out.push("sk: gendered");
+      if (l === "en" && EN_GENDERED.test(s.text)) out.push("en: he/she");
+      if (EVALUATIVE.test(s.text)) out.push(`${l}: evaluative`);
+      if (META.test(s.text)) out.push(`${l}: meta`);
+      const weak = s.refs.some((id) => ["ambiguous", "name_only"].includes(String(byId.get(id)?.data.match)));
+      if (weak && !QUALIFIER[l].test(s.text)) out.push(`${l}: unqualified name match`);
+    }
+  }
+  if (new Set(LANGS.map((l) => r[l]?.length)).size > 1) out.push("languages differ");
+  return out;
 }
 
 /**
- * Summaries per person in sk/en/hu (specs/koho-volim, AI Summary Rules) via headless Claude Code.
- * Every AI sentence must cite given item ids; otherwise the fixed template is stored instead.
- * Unchanged inputs (same hash and prompt version) are skipped.
+ * Summaries per person in sk/en/hu (specs/koho-volim, AI Summary Rules). People with only their
+ * 2026 candidacy get the fixed template. Others are written in batches by SUMMARY_ENGINE
+ * ("codex", default, or "claude"); every answer is checked by problems(). A person failing the
+ * check is retried once alone with the engine, then with Claude (at most SUMMARY_CLAUDE_MAX
+ * people per run), and otherwise gets the template. Unchanged inputs already written by AI are
+ * skipped, so a stopped run resumes. Several failed engine calls in a row stop the run (quota).
  */
 export async function summaries(): Promise<Stats> {
   const all = await inputs();
   const existing = new Map(
-    (await db.selectFrom("ai_summary").select(["person_id", "input_hash"]).where("lang", "=", "sk").execute()).map((r) => [
-      r.person_id,
-      r.input_hash,
-    ]),
+    (await db.selectFrom("ai_summary").select(["person_id", "input_hash", "method"]).where("lang", "=", "sk").execute()).map(
+      (r) => [r.person_id, r],
+    ),
   );
+  const templateOnly = process.env.SUMMARY_MODE === "template";
   const only = process.env.PIPELINE_ONLY?.split(",");
+  const upToDate = (p: PersonInput) => {
+    const e = existing.get(p.personId);
+    return e?.input_hash === p.hash && (e.method === "ai" || p.sparse || templateOnly);
+  };
   const todo = all
     .filter((p) => !only || only.some((n) => p.name.endsWith(` ${n}`)))
-    .filter((p) => existing.get(p.personId) !== p.hash)
-    .slice(0, process.env.PIPELINE_LIMIT ? Number(process.env.PIPELINE_LIMIT) : undefined);
+    .filter((p) => !upToDate(p));
 
-  const store = async (
-    p: PersonInput,
-    method: "ai" | "template",
-    model: string | null,
-    out: Record<Lang, { text: string; refs: string[] }[]>,
-  ) => {
+  const store = async (p: PersonInput, method: "ai" | "template", model: string | null, out: Record<Lang, Sentence[]>) => {
     const byId = new Map(p.refs.map((r) => [r.id, r]));
     for (const lang of LANGS) {
       const sentences = out[lang].map((s) => ({
@@ -290,43 +395,34 @@ export async function summaries(): Promise<Stats> {
         fact_ids: [...new Set(s.refs.flatMap((id) => byId.get(id)?.facts ?? []))],
         candidacy_ids: [...new Set(s.refs.flatMap((id) => byId.get(id)?.candidacies ?? []))],
       }));
+      const row = { sentences: jsonb(sentences), method, model, prompt_version: SUMMARY_PROMPT_VERSION, input_hash: p.hash };
       await db
         .insertInto("ai_summary")
-        .values({
-          person_id: p.personId,
-          lang,
-          sentences: jsonb(sentences),
-          method,
-          model,
-          prompt_version: SUMMARY_PROMPT_VERSION,
-          input_hash: p.hash,
-        })
-        .onConflict((oc) =>
-          oc.columns(["person_id", "lang"]).doUpdateSet({
-            sentences: jsonb(sentences),
-            method,
-            model,
-            prompt_version: SUMMARY_PROMPT_VERSION,
-            input_hash: p.hash,
-            generated_at: sql`now()`,
-          }),
-        )
+        .values({ person_id: p.personId, lang, ...row })
+        .onConflict((oc) => oc.columns(["person_id", "lang"]).doUpdateSet({ ...row, generated_at: sql`now()` }))
         .execute();
     }
   };
 
   let templated = 0;
-  for (const p of todo.filter((p) => p.sparse)) {
+  for (const p of todo.filter((p) => p.sparse || templateOnly)) {
+    // Keep an AI summary that is still current when only refreshing templates.
+    if (templateOnly && existing.get(p.personId)?.method === "ai" && existing.get(p.personId)?.input_hash === p.hash) continue;
     await store(p, "template", null, template(p));
     templated++;
   }
+  const rich = templateOnly
+    ? []
+    : todo.filter((p) => !p.sparse).slice(0, process.env.PIPELINE_LIMIT ? Number(process.env.PIPELINE_LIMIT) : undefined);
 
+  // Strict schema (closed objects, all required) works for both Codex and Claude.
   const sentence = {
     type: "object",
-    properties: { text: { type: "string" }, refs: { type: "array", items: { type: "string" }, minItems: 1 } },
+    properties: { text: { type: "string" }, refs: { type: "array", items: { type: "string" } } },
     required: ["text", "refs"],
+    additionalProperties: false,
   };
-  const langBlock = { type: "array", items: sentence, minItems: 1, maxItems: 5 };
+  const block = { type: "array", items: sentence };
   const schema = {
     type: "object",
     properties: {
@@ -334,51 +430,79 @@ export async function summaries(): Promise<Stats> {
         type: "array",
         items: {
           type: "object",
-          properties: { person: { type: "string" }, sk: langBlock, en: langBlock, hu: langBlock },
+          properties: { person: { type: "string" }, sk: block, en: block, hu: block },
           required: ["person", "sk", "en", "hu"],
+          additionalProperties: false,
         },
       },
     },
     required: ["people"],
+    additionalProperties: false,
   };
 
-  const rich = todo.filter((p) => !p.sparse);
-  const batches: PersonInput[][] = [];
-  for (let i = 0; i < rich.length; i += BATCH) batches.push(rich.slice(i, i + BATCH));
-  const model = process.env.CLAUDE_MODEL ?? "sonnet";
-  let ai = 0;
-  let fallback = 0;
-  let cost = 0;
-  await mapPool(batches, 3, 0, async (batch) => {
+  const engine = process.env.SUMMARY_ENGINE ?? "codex";
+  const claudeModel = process.env.CLAUDE_MODEL ?? "sonnet";
+  const engineModel = engine === "codex" ? `codex:${process.env.CODEX_MODEL ?? "default"}` : claudeModel;
+  const ask = async (batch: PersonInput[], via: string): Promise<SummaryOutput | null> => {
     const prompt =
-      "Write the summaries for these people. Each person's items have ids; cite them.\n\n" +
+      "Write the summaries for these people. Each person's items have ids; cite them in refs only, never in the text.\n\n" +
       batch
         .map((p, i) => JSON.stringify({ person: `p${i + 1}`, name: p.name, age: p.age, items: p.refs.map((r) => ({ id: r.id, ...r.data })) }))
         .join("\n");
+    if (via === "codex") return codex<SummaryOutput>(SYSTEM, prompt, schema);
+    const res = await claude<SummaryOutput>(SYSTEM, prompt, schema, claudeModel);
+    cost += res.costUsd;
+    return res.output;
+  };
+
+  let ai = 0;
+  let viaClaude = 0;
+  let fallback = 0;
+  let cost = 0;
+  let failedInRow = 0;
+  const claudeMax = Number(process.env.SUMMARY_CLAUDE_MAX ?? 100);
+  const failures: Record<string, number> = {};
+  const batches: PersonInput[][] = [];
+  for (let i = 0; i < rich.length; i += BATCH) batches.push(rich.slice(i, i + BATCH));
+
+  await mapPool(batches, Number(process.env.SUMMARY_CONCURRENCY ?? 3), 0, async (batch, index) => {
+    if (failedInRow >= 4) return; // Engine is out of quota or down: stop, resume later.
     let output: SummaryOutput | null = null;
     try {
-      const res = await claude<SummaryOutput>(SYSTEM, prompt, schema, model);
-      output = res.output;
-      cost += res.costUsd;
-    } catch {
-      output = null;
+      output = await ask(batch, engine);
+      failedInRow = 0;
+    } catch (error) {
+      failedInRow++;
+      console.error(`  batch ${index}: ${String(error).slice(0, 300)}`);
     }
     for (const [i, p] of batch.entries()) {
-      const r = output?.people.find((x) => x.person === `p${i + 1}`);
-      const ids = new Set(p.refs.map((x) => x.id));
-      const valid =
-        r &&
-        LANGS.every(
-          (l) => r[l].length >= 1 && r[l].length <= 5 && r[l].every((s) => s.text.trim() && s.refs.length > 0 && s.refs.every((id) => ids.has(id))),
-        );
-      if (valid) {
+      let r = output?.people.find((x) => x.person === `p${i + 1}`);
+      let issues = problems(p, r);
+      let model = engineModel;
+      if (issues.length && output) {
+        // Retry the person alone with the engine, then with Claude.
+        const single = await ask([p], engine).catch(() => null);
+        r = single?.people[0];
+        issues = problems(p, r);
+        if (issues.length && engine === "codex" && viaClaude < claudeMax) {
+          viaClaude++;
+          const viaC = await ask([p], "claude").catch(() => null);
+          r = viaC?.people[0];
+          issues = problems(p, r);
+          model = claudeModel;
+        }
+      }
+      if (r && !issues.length) {
         await store(p, "ai", model, { sk: r.sk, en: r.en, hu: r.hu });
         ai++;
-      } else {
+      } else if (output) {
+        // Only an answered batch falls back to the template; an engine error leaves the person for the next run.
+        for (const x of issues) failures[x.replace(/ \d+$/, "")] = (failures[x.replace(/ \d+$/, "")] ?? 0) + 1;
         await store(p, "template", null, template(p));
         fallback++;
       }
     }
+    if ((index + 1) % 20 === 0) console.log(`  ${index + 1}/${batches.length} batches, ${ai} ai, ${fallback} template`);
   });
 
   return {
@@ -386,7 +510,11 @@ export async function summaries(): Promise<Stats> {
     up_to_date: all.length - todo.length,
     template_sparse: templated,
     ai_written: ai,
+    via_claude: viaClaude,
     template_fallback: fallback,
-    usage_usd: Number(cost.toFixed(2)),
+    not_reached: rich.length - ai - fallback,
+    stopped_on_errors: failedInRow >= 4 ? "yes" : "no",
+    failure_reasons: JSON.stringify(failures),
+    claude_usage_usd: Number(cost.toFixed(2)),
   };
 }

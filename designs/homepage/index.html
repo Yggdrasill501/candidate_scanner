@@ -1,0 +1,81 @@
+<title>Koho volím návrhy</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a thin review bar of page tabs above one full-height live frame. */
+:root {
+  --bg: #F1F2F4;
+  --surface: #FFFFFF;
+  --ink: #111318;
+  --mute: #646B78;
+  --line: #DDE0E5;
+  --sans: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --mono: "Geist Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #0B0C0F; --surface: #14161B; --ink: #ECEEF2; --mute: #8D94A1; --line: #252831; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --bg: #0B0C0F; --surface: #14161B; --ink: #ECEEF2; --mute: #8D94A1; --line: #252831; color-scheme: dark; }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--ink); font: 400 14px/1.45 var(--sans); display: flex; flex-direction: column; }
+.bar { flex: none; display: flex; align-items: center; gap: 12px 24px; flex-wrap: wrap; padding-block: 12px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); border-bottom: 1px solid var(--line); background: var(--surface); }
+.title { display: flex; flex-direction: column; min-width: 0; }
+.title b { font-weight: 600; letter-spacing: -0.01em; font-size: 15px; }
+.title span { color: var(--mute); font-size: 12px; }
+.tabs { display: flex; gap: 4px; flex-wrap: wrap; flex: 1; min-width: 0; align-items: center; }
+.tabs button { border: 1px solid transparent; background: none; color: var(--mute); font: 500 14px/1 var(--sans); padding: 9px 12px; border-radius: 9px; cursor: pointer; }
+.tabs button:hover { color: var(--ink); background: var(--bg); }
+.tabs button[aria-selected="true"] { color: var(--ink); background: var(--bg); border-color: var(--line); }
+.tabs button:focus-visible, .open:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.group { font: 500 10px/1 var(--mono); text-transform: uppercase; letter-spacing: .1em; color: var(--mute); padding: 0 4px 0 12px; }
+.group:first-child { padding-left: 0; }
+.note { flex: none; display: flex; align-items: center; gap: 14px; color: var(--mute); font-size: 12px; }
+.note p { margin: 0; max-width: 44ch; }
+.open { color: var(--ink); font-weight: 500; white-space: nowrap; text-decoration: none; border: 1px solid var(--line); padding: 7px 10px; border-radius: 8px; }
+.frame { flex: 1; min-height: 560px; position: relative; }
+iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #05070B; }
+@media (max-width: 1100px) { .note p { display: none; } }
+@media (max-width: 560px) { .tabs button { padding: 8px 10px; } .frame { min-height: 78vh; } }
+</style>
+
+<header class="bar">
+  <div class="title"><b>Koho volím</b><span>Návrh stránok · ukážkové údaje</span></div>
+  <div class="tabs" role="tablist" aria-label="Stránky">
+    <button role="tab" id="t-uvod" data-src="uvod.html" data-note="Úvod: mapa hraníc obcí a vyhľadávanie. Skúste napísať Vzorový alebo názov obce.">Úvod</button>
+    <button role="tab" id="t-kandidati" data-src="kandidati.html" data-note="Všetci kandidáti po voľbách, vždy v poradí podľa hlasovacieho lístka, s filtrom.">Kandidáti</button>
+    <span class="group">Profily</span>
+    <button role="tab" id="t-vzorovy" data-src="profil.html#jan-vzorovy" data-note="Primátor s históriou, firmami a námietkou, ktorá ostáva viditeľná pri údaji.">Vzorový</button>
+    <button role="tab" id="t-prikladna" data-src="profil.html#eva-prikladna" data-note="Prvá kandidatúra: prázdne sekcie s „Nenájdené v“ a nedostupný zdroj.">Príkladná</button>
+    <button role="tab" id="t-minta" data-src="profil.html#gabor-minta" data-note="Kandidát na predsedu NSK s dlhou históriou, nejednoznačnou zhodou a zhrnutím po maďarsky.">Minta</button>
+    <span class="group">Info</span>
+    <button role="tab" id="t-metodika" data-src="metodika.html" data-note="Ako vzniká profil: rovnaký postup, priradenie k osobe, pravidlá zhrnutia AI.">Metodika</button>
+    <button role="tab" id="t-zdroje" data-src="zdroje.html" data-note="Každý zdroj s rozsahom, formátom, podmienkami a dátumom posledného zberu.">Zdroje</button>
+    <button role="tab" id="t-opravy" data-src="opravy.html" data-note="Nahlásenie chyby, postup, otvorené námietky a verejný protokol zmien.">Opravy</button>
+  </div>
+  <div class="note"><p id="note"></p><a class="open" id="open" href="uvod.html" target="_blank" rel="noopener">Otvoriť samostatne ↗</a></div>
+</header>
+<main class="frame"><iframe id="view" title="Náhľad stránky" src="uvod.html"></iframe></main>
+
+<script>
+(function () {
+  const tabs = [...document.querySelectorAll("[role=tab]")];
+  const view = document.getElementById("view"), note = document.getElementById("note"), open = document.getElementById("open");
+  function show(btn, push) {
+    tabs.forEach((t) => t.setAttribute("aria-selected", String(t === btn)));
+    if (view.getAttribute("src") !== btn.dataset.src) view.setAttribute("src", btn.dataset.src);
+    note.textContent = btn.dataset.note;
+    open.href = btn.dataset.src;
+    if (push) try { history.replaceState(null, "", "#" + btn.id.slice(2)); } catch (e) {}
+  }
+  tabs.forEach((t) => t.addEventListener("click", () => show(t, true)));
+  document.addEventListener("keydown", (e) => {
+    if (e.target instanceof HTMLInputElement) return;
+    const i = tabs.findIndex((t) => t.getAttribute("aria-selected") === "true");
+    if (e.key === "ArrowRight") show(tabs[(i + 1) % tabs.length], true);
+    if (e.key === "ArrowLeft") show(tabs[(i + tabs.length - 1) % tabs.length], true);
+  });
+  show(tabs.find((t) => "#" + t.id.slice(2) === location.hash) || tabs[0], false);
+})();
+</script>

@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kandidáti · Koho volím</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="site.css">
+<style>
+/* Layout: heading, one glass filter bar, then every race as its own block with candidates in ballot order. */
+.head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; margin-top: 40px; }
+.head .stats { display: flex; gap: 28px; }
+.head .stats div b { display: block; font-size: 30px; font-weight: 500; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+.head .stats div span { font: 400 11px/1 var(--mono); color: var(--mute); }
+
+.filters { position: sticky; top: 92px; z-index: 20; margin-top: 30px; border-radius: 20px; padding: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.kinds { display: flex; flex-wrap: wrap; gap: 2px; padding: 3px; border-radius: 999px; background: rgba(255,255,255,.04); }
+.kinds button { border: 0; background: none; color: var(--mute); font: 500 13px/1 var(--sans); padding: 9px 13px; border-radius: 999px; cursor: pointer; white-space: nowrap; }
+.kinds button:hover { color: var(--ink); }
+.kinds button[aria-pressed="true"] { color: var(--bg); background: var(--ink); }
+.filters select { appearance: none; border: 0; border-radius: 999px; padding: 9px 32px 9px 14px; font: 500 13px/1 var(--sans); color: var(--ink); cursor: pointer;
+  background: rgba(255,255,255,.06) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M1 1l4 4 4-4' fill='none' stroke='%238A91A1' stroke-width='1.5'/></svg>") no-repeat right 13px center; }
+.filters .find { flex: 1; min-width: 200px; }
+.filters .count { font: 400 12px/1 var(--mono); color: var(--mute); white-space: nowrap; padding-right: 6px; }
+
+.races { margin-top: 26px; display: grid; gap: 18px; }
+.race { border-radius: 24px; padding: 6px; scroll-margin-top: 170px; transition: box-shadow .5s; }
+.race.flash { box-shadow: inset 0 1px 0 var(--spec), 0 0 0 1px rgba(175,193,255,.5), 0 0 50px -10px rgba(175,193,255,.45); }
+.race header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; padding: 16px 18px 12px; }
+.race h2 { margin: 0; font-size: 21px; font-weight: 500; letter-spacing: -0.03em; }
+.race header .where { color: var(--mute); }
+.race header .facts { margin-left: auto; display: flex; gap: 14px; font: 400 12px/1 var(--mono); color: var(--mute); }
+.race header .facts b { color: var(--ink); font-weight: 500; }
+
+.list { display: grid; }
+.list .r { display: grid; grid-template-columns: 54px minmax(180px, 2fr) 56px minmax(140px, 1.4fr) minmax(140px, 1.3fr) 110px 70px 28px; gap: 12px; align-items: center; padding: 12px 18px; border-radius: 14px; text-decoration: none; color: var(--ink); }
+.list .r.th { padding-block: 6px 8px; font: 500 10px/1.2 var(--mono); text-transform: uppercase; letter-spacing: .1em; color: var(--dim); }
+.list a.r:hover { background: rgba(255,255,255,.05); }
+.list .r + .r:not(.th) { box-shadow: inset 0 1px 0 var(--line); }
+.list .no { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font: 500 13px/1 var(--mono); color: var(--moon); box-shadow: inset 0 0 0 1px rgba(175,193,255,.3); }
+.list .nm b { font-weight: 500; }
+.list .nm small { display: block; font: 400 11px/1.3 var(--mono); color: var(--dim); }
+.list .nm .t { color: var(--mute); font-size: 13px; margin-right: 4px; }
+.list .c { font-size: 14px; color: var(--mute); min-width: 0; overflow-wrap: anywhere; }
+.list .n { font: 400 14px/1 var(--mono); color: var(--ink); font-variant-numeric: tabular-nums; }
+.list .n.zero { color: var(--dim); }
+.list .go { color: var(--dim); text-align: right; }
+.list a.r:hover .go { color: var(--moon); }
+.list mark { background: none; color: var(--moon); }
+.more { padding: 12px 18px 14px; font: 400 12px/1.4 var(--mono); color: var(--dim); box-shadow: inset 0 1px 0 var(--line); }
+.empty { margin-top: 26px; padding: 28px; border-radius: 20px; box-shadow: inset 0 0 0 1px var(--line); color: var(--mute); }
+.empty b { color: var(--ink); font-weight: 500; }
+.legend { margin-top: 16px; font: 400 11px/1.6 var(--mono); color: var(--dim); }
+
+@media (max-width: 900px) {
+  .filters { position: static; }
+  .list .r.th { display: none; }
+  .list .r { grid-template-columns: 44px minmax(0, 1fr) auto; grid-template-areas: "no nm go" "no c1 c1" "no c2 c2" "no st st"; row-gap: 4px; }
+  .list .no { grid-area: no; align-self: start; }
+  .list .nm { grid-area: nm; }
+  .list .go { grid-area: go; }
+  .list .age { display: none; }
+  .list .occ { grid-area: c1; }
+  .list .party { grid-area: c2; }
+  .list .hist, .list .firms { grid-area: st; }
+  .list .firms { display: none; }
+  .list .hist::before { content: "kandidoval / zvolený "; color: var(--dim); font-size: 11px; }
+  .race header .facts { margin-left: 0; }
+}
+</style>
+</head>
+<body data-page="kandidati">
+<div class="page">
+  <div class="head">
+    <div class="rise d1">
+      <span class="sample">Ukážka · 4 voľby s fiktívnymi kandidátmi</span>
+      <h1 class="title">Kandidáti</h1>
+      <p class="lede">Všetci kandidáti v Nitrianskom kraji, vždy v poradí podľa hlasovacieho lístka. Zoznam nie je možné zoradiť podľa iného kritéria a nič nehodnotí.</p>
+    </div>
+    <div class="stats rise d2" aria-label="Rozsah v ostrej verzii">
+      <div><b>5 460</b><span>kandidátov</span></div>
+      <div><b>354</b><span>obcí</span></div>
+      <div><b>4</b><span>druhy volieb</span></div>
+    </div>
+  </div>
+
+  <div class="filters glass rise d3" role="search" aria-label="Filter zoznamu">
+    <div class="kinds" role="group" aria-label="Druh voľby">
+      <button type="button" data-kind="" aria-pressed="true">Všetky</button>
+      <button type="button" data-kind="mayor">Starosta a primátor</button>
+      <button type="button" data-kind="council">Poslanci obce</button>
+      <button type="button" data-kind="governor">Predseda NSK</button>
+      <button type="button" data-kind="regional">Poslanci NSK</button>
+    </div>
+    <label class="vh" for="okres">Okres</label>
+    <select id="okres"><option value="">Všetky okresy</option></select>
+    <div class="find line"><span class="arrow" aria-hidden="true">→</span><label class="vh" for="find">Hľadať v zozname</label><input id="find" type="search" placeholder="Meno, obec, strana alebo povolanie"></div>
+    <span class="count" id="count"></span>
+  </div>
+
+  <div class="races" id="races"></div>
+  <p class="legend">Kandidoval / zvolený: počet kandidatúr a zvolení v komunálnych voľbách a voľbách do VÚC 2010 – 2022. Firmy: počet funkcií v RPVS a ORSR. Pri každom čísle profil uvádza zdroj a dôvod zhody.</p>
+</div>
+
+<script src="geo.js"></script>
+<script src="sample.js"></script>
+<script src="chrome.js"></script>
+<script src="search.js"></script>
+<script>
+(function () {
+  const S = KVSAMPLE, $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const slug = (s) => KV.norm(s).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const state = { kind: "", okres: "", q: "", obec: "", flash: "" };
+
+  $("okres").innerHTML += KV.OKRESY.map((o) => '<option value="' + o.name + '">Okres ' + o.name + "</option>").join("");
+
+  function hl(text, q) {
+    if (!q) return esc(text);
+    const i = KV.norm(text).indexOf(KV.norm(q));
+    return i < 0 ? esc(text) : esc(text.slice(0, i)) + "<mark>" + esc(text.slice(i, i + q.length)) + "</mark>" + esc(text.slice(i + q.length));
+  }
+
+  function render() {
+    const q = state.q.trim(), nq = KV.norm(q);
+    let shown = 0, cands = 0;
+    const html = S.races.map((r) => {
+      if (state.kind && r.kind !== state.kind) return "";
+      if (state.okres && r.okres && r.okres !== state.okres) return "";
+      if (state.okres && !r.okres && r.kind !== "governor") return "";
+      if (state.obec && r.obec !== state.obec && r.kind !== "governor" && !(r.kind === "regional" && r.okres === obecOkres(state.obec))) return "";
+      const rows = r.rows.filter((x) => !nq || KV.norm([x[2], x[4], x[5], r.obec || "", r.where].join(" ")).includes(nq));
+      if (!rows.length) return "";
+      shown++; cands += rows.length;
+      return '<section class="race glass" id="' + r.id + '"><header><h2>' + esc(r.title) + '</h2><span class="where">' + esc(r.where) + (r.okres && r.kind !== "regional" ? " · okres " + esc(r.okres) : "") +
+        '</span><span class="facts"><span><b>' + r.seats + "</b> " + (r.seats === 1 ? "mandát" : r.seats < 5 ? "mandáty" : "mandátov") + "</span><span><b>" + r.total + "</b> kandidátov</span></span></header>" +
+        '<div class="list" role="table" aria-label="' + esc(r.title) + '"><div class="r th" role="row"><span>č.</span><span>Meno</span><span>Vek</span><span>Povolanie</span><span>Strana</span><span>Kandidoval / zvolený</span><span>Firmy</span><span></span></div>' +
+        rows.map((x) => {
+          const [no, tit, name, age, occ, party, ran, won, firms, sl] = x;
+          const tag = sl ? 'a href="profil.html#' + sl + '"' : "div";
+          return "<" + tag + ' class="r" role="row"><span class="no">' + no + '</span><span class="nm">' + (tit ? '<span class="t">' + esc(tit) + "</span>" : "") + "<b>" + hl(name, q) + "</b>" + (sl ? "" : "<small>profil v ukážke nie je</small>") +
+            '</span><span class="n age">' + age + '</span><span class="c occ">' + hl(occ, q) + '</span><span class="c party">' + hl(party, q) + '</span><span class="n hist' + (ran ? "" : " zero") + '">' + ran + " / " + won +
+            '</span><span class="n firms' + (firms ? "" : " zero") + '">' + firms + '</span><span class="go" aria-hidden="true">' + (sl ? "→" : "") + "</span></" + (sl ? "a" : "div") + ">";
+        }).join("") +
+        (r.partial && !nq ? '<div class="more">Ukážka zobrazuje 6 z ' + r.total + " kandidátov tohto obvodu, čísla " + r.rows[0][0] + " – " + r.rows[r.rows.length - 1][0] + ".</div>" : "") +
+        "</div></section>";
+    }).join("");
+    $("races").innerHTML = html || '<div class="empty">' + (state.obec
+      ? "Pre obec <b>" + esc(state.obec) + "</b> v ukážke nie sú kandidáti. V ostrej verzii tu bude hlasovací lístok obce so štyrmi voľbami."
+      : "Nič sme nenašli pre „" + esc(q) + "“. Skontrolujte pravopis alebo zrušte filter.") + "</div>";
+    $("count").textContent = shown + (shown === 1 ? " voľba · " : shown < 5 ? " voľby · " : " volieb · ") + cands + " kandidátov";
+    if (state.flash) {
+      const el = $(state.flash);
+      if (el) { el.scrollIntoView({ block: "start" }); el.classList.add("flash"); setTimeout(() => el.classList.remove("flash"), 1800); }
+      state.flash = "";
+    }
+  }
+  const obecOkres = (name) => (KV.OBCE.find((o) => o.label === name) || {}).okres;
+
+  document.querySelectorAll("[data-kind]").forEach((b) => b.addEventListener("click", () => {
+    state.kind = b.dataset.kind;
+    document.querySelectorAll("[data-kind]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+    render();
+  }));
+  $("okres").addEventListener("change", (e) => { state.okres = e.target.value; state.obec = ""; render(); });
+  $("find").addEventListener("input", (e) => { state.q = e.target.value; render(); });
+
+  // hash from search or profile: a race id, a municipality, a district or a race kind
+  function fromHash() {
+    const h = decodeURIComponent(location.hash.slice(1));
+    Object.assign(state, { kind: "", okres: "", obec: "", flash: "" });
+    if (S.races.some((r) => r.id === h)) state.flash = h;
+    else if (h === "predseda-nsk") state.kind = "governor";
+    else if (h === "poslanci-nsk") state.kind = "regional";
+    else if (h) {
+      const ob = KV.OBCE.find((o) => slug(o.label) === h);
+      const ok = KV.OKRESY.find((o) => slug(o.name) === h);
+      if (ob && !(ok && ok.name === ob.label && !S.races.some((r) => r.obec === ob.label))) state.obec = ob.label;
+      else if (ok) state.okres = ok.name;
+    }
+    document.querySelectorAll("[data-kind]").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.kind === state.kind)));
+    $("okres").value = state.okres;
+    render();
+  }
+  addEventListener("hashchange", fromHash);
+  fromHash();
+})();
+</script>
+</body>
+</html>

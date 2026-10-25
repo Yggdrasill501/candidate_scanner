@@ -10,6 +10,7 @@ if (existsSync(rootEnv)) {
 
 const nextConfig: NextConfig = {
   cacheComponents: true,
+  partialPrefetching: true,
   transpilePackages: ["@repo/contract", "@repo/db"],
   turbopack: {
     rules: {

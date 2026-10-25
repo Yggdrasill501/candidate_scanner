@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Opravy · Koho volím</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="site.css">
+<style>
+/* Layout: report form beside the four-step process; below, open disputes and the public change log. */
+.top { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: 24px; margin-top: 36px; align-items: start; }
+form.report { border-radius: 24px; padding: 24px; display: grid; gap: 16px; }
+form.report h2, .process h2, .block h2 { margin: 0; font-size: 21px; font-weight: 500; letter-spacing: -0.03em; }
+.field { display: grid; gap: 6px; }
+.field > label, .field > span { font: 500 11px/1 var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--mute); }
+.field input[type="text"], .field input[type="url"], .field input[type="email"], .field select, .field textarea {
+  width: 100%; border: 0; border-radius: 12px; padding: 12px 14px; font: 400 15px/1.4 var(--sans); color: var(--ink); background: rgba(255,255,255,.05); box-shadow: inset 0 0 0 1px var(--line); }
+.field textarea { min-height: 110px; resize: vertical; }
+.field input:focus, .field select:focus, .field textarea:focus { outline: none; box-shadow: inset 0 0 0 1px rgba(175,193,255,.6), 0 0 0 4px rgba(175,193,255,.12); }
+.field select { appearance: none; background: rgba(255,255,255,.05) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M1 1l4 4 4-4' fill='none' stroke='%238A91A1' stroke-width='1.5'/></svg>") no-repeat right 14px center; }
+.field small { color: var(--dim); font-size: 12px; }
+.check { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; color: #C9CDD8; }
+.check input { margin-top: 3px; accent-color: #AFC1FF; width: 16px; height: 16px; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.send { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
+.send button { border: 0; border-radius: 999px; padding: 13px 20px; font: 500 15px/1 var(--sans); color: var(--bg); background: var(--ink); cursor: pointer; }
+.send button:hover { background: #fff; }
+.send p { margin: 0; font-size: 13px; color: var(--mute); }
+.sent { padding: 12px 14px; border-radius: 12px; background: rgba(175,193,255,.08); box-shadow: inset 0 0 0 1px rgba(175,193,255,.3); font-size: 14px; }
+.mail { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: 14px; color: var(--mute); }
+.mail code { font: 500 14px/1 var(--mono); color: var(--ink); user-select: all; }
+
+.process { display: grid; gap: 18px; }
+.steps { list-style: none; margin: 0; padding: 0 0 0 28px; position: relative; display: grid; gap: 18px; counter-reset: st; }
+.steps::before { content: ""; position: absolute; left: 11px; top: 8px; bottom: 8px; width: 1px; background: linear-gradient(180deg, rgba(175,193,255,.5), var(--line)); }
+.steps li { position: relative; counter-increment: st; }
+.steps li::before { content: counter(st); position: absolute; left: -28px; top: 0; width: 23px; height: 23px; border-radius: 50%; display: grid; place-items: center; font: 500 11px/1 var(--mono); color: var(--moon); background: var(--bg); box-shadow: inset 0 0 0 1px rgba(175,193,255,.5); }
+.steps b { display: block; font-weight: 500; }
+.steps p { margin: 4px 0 0; color: var(--mute); font-size: 14px; }
+.rules { border-radius: 20px; padding: 18px 20px; }
+.rules ul { margin: 10px 0 0; padding-left: 18px; color: #C9CDD8; font-size: 14px; }
+.rules li + li { margin-top: 6px; }
+
+.block { margin-top: 56px; }
+.block .hd { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 16px; }
+.dispute-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: center; padding: 18px 20px; border-radius: 18px; text-decoration: none; color: var(--ink); background: rgba(232,194,122,.04); box-shadow: inset 0 0 0 1px rgba(232,194,122,.22); }
+.dispute-card:hover { background: rgba(232,194,122,.08); }
+.dispute-card .tag { font: 500 10px/1 var(--mono); text-transform: uppercase; letter-spacing: .1em; color: var(--warn); }
+.dispute-card b { display: block; margin-top: 8px; font-weight: 500; font-size: 16px; }
+.dispute-card p { margin: 4px 0 0; color: var(--mute); font-size: 14px; }
+.dispute-card .go { font: 400 12px/1 var(--mono); color: var(--mute); }
+
+.tablewrap { overflow-x: auto; border-radius: 18px; box-shadow: inset 0 0 0 1px var(--line); }
+table.log { width: 100%; border-collapse: collapse; min-width: 860px; font-size: 14px; }
+.log th { text-align: left; font: 500 10px/1 var(--mono); text-transform: uppercase; letter-spacing: .1em; color: var(--dim); padding: 14px 16px 10px; border-bottom: 1px solid var(--line); }
+.log td { padding: 14px 16px; border-bottom: 1px solid var(--line); vertical-align: top; color: #C9CDD8; }
+.log tr:last-child td { border-bottom: 0; }
+.log td.d { font: 400 13px/1.4 var(--mono); color: var(--mute); white-space: nowrap; }
+.log td b { color: var(--ink); font-weight: 500; }
+.log .kind { display: inline-block; font: 500 10px/1 var(--mono); text-transform: uppercase; letter-spacing: .08em; padding: 5px 7px; border-radius: 6px; background: rgba(255,255,255,.05); color: var(--mute); white-space: nowrap; }
+
+@media (max-width: 900px) {
+  .top { grid-template-columns: 1fr; }
+  .two { grid-template-columns: 1fr; }
+  .dispute-card { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body data-page="opravy">
+<div class="page">
+  <p class="crumbs rise d1"><a href="uvod.html">Úvod</a><span>Opravy</span></p>
+  <h1 class="title rise d1">Opravy a námietky</h1>
+  <p class="lede rise d2">Ak je v profile chyba alebo s údajom nesúhlasíte, napíšte nám. Údaj overíme v zdroji. <b>Namietaný údaj neskrývame</b>: zobrazíme ho spolu s vyjadrením kandidáta a s našou odpoveďou.</p>
+
+  <div class="top">
+    <form class="report glass rise d3" id="report" novalidate>
+      <h2>Nahlásiť chybu</h2>
+      <div class="field"><label for="who">Kandidát</label><input id="who" type="text" placeholder="Meno alebo odkaz na profil" value="Ing. Ján Vzorový"></div>
+      <div class="two">
+        <div class="field"><label for="sec">Časť profilu</label>
+          <select id="sec"><option>Kandidatúry 2026</option><option>Volebná história</option><option selected>Firmy a funkcie</option><option>Zhrnutie AI</option><option>Iné</option></select></div>
+        <div class="field"><label for="kind">Typ</label>
+          <select id="kind"><option>Údaj je nesprávny</option><option>Ide o inú osobu</option><option>Chýba údaj</option><option>Nesúhlasím s údajom</option></select></div>
+      </div>
+      <div class="field"><label for="what">Čo je podľa vás nesprávne</label><textarea id="what" placeholder="Opíšte, ktorý údaj a prečo">Funkcia konateľa vo Vzorovej stavebnej s.r.o. skončila v marci 2021.</textarea></div>
+      <div class="field"><label for="proof">Zdroj alebo dôkaz</label><input id="proof" type="url" placeholder="https://"><small>Odkaz na register, rozhodnutie alebo iný verejný dokument. Údaj meníme, keď zdroj preukáže chybu.</small></div>
+      <label class="check"><input type="checkbox" id="iscand" checked> Som kandidát, ktorého sa údaj týka. Moje vyjadrenie sa zobrazí pri údaji.</label>
+      <div class="field"><label for="mail">E-mail na odpoveď</label><input id="mail" type="email" placeholder="nezverejňujeme"></div>
+      <div class="send"><button type="submit">Odoslať námietku</button><p>Ukážka: formulár nič neodosiela.</p></div>
+      <div class="sent" id="sent" hidden>V ostrej verzii by sme námietku prijali a potvrdili e-mailom. V tejto ukážke sa nič neodoslalo.</div>
+      <p class="mail">Alebo e-mailom: <code>opravy@kohovolim.sk</code> <button type="button" class="pillbtn" id="copy">Kopírovať</button> <span class="muted" style="font-size:12px">(ukážková adresa)</span></p>
+    </form>
+
+    <div class="process rise d3">
+      <h2>Ako postupujeme</h2>
+      <ol class="steps">
+        <li><b>Prijatie</b><p>Potvrdíme, že sme námietku dostali, a priradíme ju ku konkrétnemu údaju.</p></li>
+        <li><b>Overenie v zdroji</b><p>Údaj skontrolujeme v pôvodnom zdroji aj v uloženej kópii z času zberu.</p></li>
+        <li><b>Zverejnenie námietky</b><p>Ak ide o spor, pri údaji zobrazíme vyjadrenie kandidáta a našu odpoveď. Údaj ostáva viditeľný.</p></li>
+        <li><b>Oprava a záznam</b><p>Ak zdroj chybu potvrdí, údaj opravíme a zmenu zapíšeme do protokolu nižšie.</p></li>
+      </ol>
+      <div class="rules glass">
+        <span class="eyebrow">Pravidlá</span>
+        <ul>
+          <li>Údaj neodstránime len preto, že ho niekto namieta.</li>
+          <li>Ak sme záznam priradili nesprávnej osobe, ide o opravu a priradenie zrušíme.</li>
+          <li>Každá zmena má dátum, dôvod a zdroj.</li>
+          <li>E-mailovú adresu odosielateľa nezverejňujeme.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <section class="block">
+    <div class="hd"><h2>Otvorené námietky</h2><span class="sample">Ukážka · fiktívne záznamy</span></div>
+    <a class="dispute-card" href="profil.html#jan-vzorovy">
+      <span><span class="tag">Namietané · od 14. 10. 2026</span><b>Ing. Ján Vzorový · Konateľ, Vzorová stavebná s.r.o.</b>
+        <p>Kandidát uvádza, že funkcia skončila v roku 2021. ORSR k 22. 10. 2026 uvádza funkciu ako platnú. Údaj ostáva, vyjadrenie je zobrazené pri ňom.</p></span>
+      <span class="go">Zobraziť v profile →</span>
+    </a>
+  </section>
+
+  <section class="block">
+    <div class="hd"><h2>Protokol zmien</h2><span class="sample">Ukážka · fiktívne záznamy</span></div>
+    <div class="tablewrap">
+      <table class="log">
+        <thead><tr><th>Dátum</th><th>Kandidát</th><th>Typ</th><th>Zmena</th><th>Dôvod</th><th>Zdroj</th></tr></thead>
+        <tbody>
+          <tr><td class="d">21. 10. 2026</td><td><b>PhDr. Gábor Minta</b></td><td><span class="kind">Priradenie</span></td><td>Kandidatúra z roku 2010 označená ako nejednoznačná zhoda, predtým priradená jednej osobe.</td><td>V kraji sú dve osoby s rovnakým menom a zodpovedajúcim vekom.</td><td><span class="src">ŠÚ SR</span></td></tr>
+          <tr><td class="d">19. 10. 2026</td><td><b>Mária Modelová</b></td><td><span class="kind">Zámena osoby</span></td><td>Zrušené priradenie funkcie v spoločnosti Modelová Trade s.r.o.</td><td>RPVS uvádza iný rok narodenia ako kandidátna listina.</td><td><span class="src">RPVS</span></td></tr>
+          <tr><td class="d">18. 10. 2026</td><td><b>PaedDr. Tibor Šablóna</b></td><td><span class="kind">Oprava údaja</span></td><td>Doplnený titul podľa opraveného zoznamu kandidátov.</td><td>Ministerstvo vnútra zverejnilo opravený zoznam.</td><td><span class="src">MV SR</span></td></tr>
+          <tr><td class="d">16. 10. 2026</td><td><b>Ing. Ján Vzorový</b></td><td><span class="kind">Námietka</span></td><td>Pridané vyjadrenie kandidáta k funkcii konateľa. Údaj ostáva bez zmeny.</td><td>Register k dátumu kontroly uvádza funkciu ako platnú.</td><td><span class="src">ORSR</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<script src="geo.js"></script>
+<script src="sample.js"></script>
+<script src="chrome.js"></script>
+<script src="search.js"></script>
+<script>
+(function () {
+  document.getElementById("report").addEventListener("submit", (e) => { e.preventDefault(); document.getElementById("sent").hidden = false; });
+  const copy = document.getElementById("copy");
+  copy.addEventListener("click", () => {
+    const code = document.querySelector(".mail code");
+    navigator.clipboard.writeText(code.textContent).then(() => { copy.textContent = "Skopírované"; }, () => {
+      const r = document.createRange(); r.selectNodeContents(code); const s = getSelection(); s.removeAllRanges(); s.addRange(r); copy.textContent = "Označené, stlačte ⌘C";
+    });
+  });
+})();
+</script>
+</body>
+</html>

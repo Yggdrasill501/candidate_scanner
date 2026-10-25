@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="sk">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>Koho volím</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap"
+    />
+    <link rel="stylesheet" href="kit.css" />
+    <style>
+      /* Layout: dark night sky, copy and a borderless line search on the left, the region's real borders bleeding off the right edge. Dark by design. */
+      :root {
+        --bg: #05070B;
+        --ink: #ECEEF3;
+        --mute: #8A91A1;
+        --dim: #555C6B;
+        --line: rgba(236,238,243,.08);
+        --moon: #AFC1FF;
+        --glass: rgba(255,255,255,.05);
+        --glass-strong: rgba(20,24,34,.88);
+        --rim: rgba(255,255,255,.18);
+        --spec: rgba(255,255,255,.22);
+        --shade: rgba(0,0,0,.6);
+        --ring-base: rgba(236,238,243,.12);
+        --ring-a: #AFC1FF;
+        --ring-b: #FFFFFF;
+        --ring-glow: rgba(90,110,190,.45);
+        --search-bg: rgba(12,14,20,.72);
+        --map-dot: #2A3346;
+        --map-edge: #111723;
+        --map-hi: #C8D5FF;
+        --map-label: #79839A;
+        --map-plate: #E9EEFF;
+        --map-plate-fg: #06070A;
+        --sans: "Geist", ui-sans-serif, system-ui, sans-serif;
+        --mono: "Geist Mono", ui-monospace, Menlo, monospace;
+        color-scheme: dark;
+      }
+      * { box-sizing: border-box; }
+      :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+      body {
+        margin: 0; background: var(--bg); color: var(--ink); font: 400 15px/1.55 var(--sans); -webkit-font-smoothing: antialiased; overflow-x: hidden;
+        padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+      }
+      body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+
+      .sky { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+      .halo { position: absolute; left: 62%; top: -280px; width: 1000px; height: 620px; transform: translateX(-50%); background: radial-gradient(closest-side, rgba(175,193,255,.26), transparent); filter: blur(30px); }
+      .cone { position: absolute; left: 62%; top: -120px; width: 1500px; height: 1100px; transform: translateX(-50%);
+        background: conic-gradient(from 180deg at 50% 0%, transparent 156deg, rgba(175,193,255,.05) 168deg, rgba(210,220,255,.18) 178deg, rgba(240,244,255,.24) 180deg, rgba(210,220,255,.18) 182deg, rgba(175,193,255,.05) 192deg, transparent 204deg);
+        filter: blur(18px); mask-image: linear-gradient(to bottom, #000 30%, transparent 85%); animation: breathe 9s ease-in-out infinite; }
+      .grain { position: absolute; inset: 0; opacity: .07; mix-blend-mode: overlay;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); }
+      @keyframes breathe { 0%,100% { opacity: .8 } 50% { opacity: 1 } }
+
+      .page { position: relative; z-index: 1; max-width: 1320px; margin: 0 auto; }
+      .bar { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 14px); z-index: 20; margin-top: 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 7px 7px 7px 16px; border-radius: 999px; }
+      .brand { display: flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; font-weight: 600; letter-spacing: -0.01em; }
+      .brand i { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--ink); display: grid; place-items: center; }
+      .brand i::after { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--moon); box-shadow: 0 0 10px var(--moon); }
+      .bar nav { display: flex; gap: 2px; }
+      .bar nav a { color: var(--mute); text-decoration: none; font-size: 14px; padding: 8px 14px; border-radius: 999px; }
+      .bar nav a:hover { color: var(--ink); background: var(--glass); }
+      .seg { display: flex; padding: 3px; border-radius: 999px; background: rgba(255,255,255,.04); }
+      .seg a { font: 500 12px/1 var(--mono); color: var(--mute); text-decoration: none; padding: 8px 11px; border-radius: 999px; }
+      .seg a[aria-current] { color: var(--ink); background: rgba(255,255,255,.1); box-shadow: inset 0 1px 0 var(--spec); }
+
+      .stage { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); align-items: center; gap: 24px; min-height: min(820px, calc(100vh - 90px)); padding-block: 24px; }
+      .copy { display: flex; flex-direction: column; gap: 26px; min-width: 0; position: relative; z-index: 3; }
+      .pill { align-self: flex-start; display: inline-flex; align-items: center; gap: 10px; padding: 7px 14px 7px 11px; border-radius: 999px; font-size: 13px; color: var(--mute); margin: 0; }
+      .pill b { color: var(--ink); font-weight: 500; font-variant-numeric: tabular-nums; }
+      .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--moon); animation: ping 2.2s infinite; }
+      @keyframes ping { 0% { box-shadow: 0 0 0 0 rgba(175,193,255,.55) } 70%,100% { box-shadow: 0 0 0 9px rgba(175,193,255,0) } }
+      h1 { margin: 0; font-weight: 500; letter-spacing: -0.055em; line-height: .98; font-size: clamp(46px, 6.4vw, 92px); text-wrap: balance;
+        background: linear-gradient(180deg, #fff 25%, #A3A9B8 115%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+      h1 span { background: linear-gradient(180deg, #D4DDFF, #6F7DA6 125%); -webkit-background-clip: text; background-clip: text; }
+      .lede { margin: 0; max-width: 44ch; color: var(--mute); font-size: 17px; }
+      .lede b { color: var(--ink); font-weight: 500; }
+      .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+
+      .mapbox { position: relative; min-width: 0; height: min(760px, 82vh); margin-right: calc(-1 * max(16px, env(safe-area-inset-right, 0px))); }
+      .mapbox canvas { position: absolute; inset: 0; width: 100%; height: 100%; cursor: crosshair; touch-action: pan-y; }
+      /* solid glass fill: a backdrop-filter over the canvas would re-render every repaint */
+      .tip { position: absolute; z-index: 4; left: 0; top: 0; width: 230px; padding: 14px 16px; border-radius: 20px; pointer-events: none; opacity: 0; transform: translate(0, 8px) scale(.96);
+        transition: opacity .25s, transform .35s cubic-bezier(.3,1.4,.4,1), left .45s cubic-bezier(.2,.8,.2,1), top .45s cubic-bezier(.2,.8,.2,1); }
+      .tip.glass { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--glass-strong); }
+      .tip.on { opacity: 1; transform: none; }
+      .tip small { font: 500 10px/1 var(--mono); text-transform: uppercase; letter-spacing: .1em; color: var(--mute); }
+      .tip b { display: block; margin-top: 6px; font-size: 20px; font-weight: 500; letter-spacing: -0.02em; }
+      .tip dl { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; margin: 12px 0 0; font-size: 12px; }
+      .tip dt { color: var(--mute); } .tip dd { margin: 0; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+      .legend-note { position: absolute; right: 24px; bottom: 6px; font: 400 11px/1 var(--mono); color: var(--dim); }
+
+      /* the search block stacks above the chips that follow it, so its suggestions are never covered */
+      .search-slot { position: relative; z-index: 6; }
+      .chips { position: relative; z-index: 1; }
+      input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+      .kv-search [data-results] { background: rgba(13,16,24,.97); }
+
+      /* 2 · Spotlight: a soft aurora behind a large slab, grouped results */
+        background: conic-gradient(from var(--a), rgba(175,193,255,.0), rgba(175,193,255,.55), rgba(130,160,255,.15), rgba(220,230,255,.5), rgba(175,193,255,.0)); animation: kv-orbit 9s linear infinite; }
+
+      /* 3 · Rozsah: scope pills sit on top of the field inside one glass block */
+
+      /* 4 · Môj lístok: municipality first, then the four ballots */
+
+      /* search: no box, large type on a line with a sweeping gradient underline */
+      [data-v="riadok"] .kv-search { padding-bottom: 2px; }
+      [data-v="riadok"] .lineform { display: flex; align-items: center; gap: 14px; padding: 8px 0 14px; position: relative; }
+      [data-v="riadok"] .lineform::before { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--ring-base); }
+      [data-v="riadok"] .lineform::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 3px; border-radius: 3px; filter: drop-shadow(0 0 8px rgba(175,193,255,.7));
+        background: linear-gradient(90deg, transparent 0%, transparent 30%, var(--ring-a) 45%, #fff 50%, var(--ring-a) 55%, transparent 70%, transparent 100%); background-size: 250% 100%; animation: sweep 4.5s linear infinite; opacity: .7; transition: opacity .3s; }
+      [data-v="riadok"] .kv-search:focus-within .lineform::after { opacity: 1; animation-duration: 2s; }
+      @keyframes sweep { from { background-position: 100% 0 } to { background-position: -150% 0 } }
+      [data-v="riadok"] .lineform input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--ink); font: 300 clamp(26px, 3vw, 38px)/1.1 var(--sans); letter-spacing: -0.03em; padding: 0; }
+      [data-v="riadok"] .lineform input::placeholder { color: var(--dim); }
+      [data-v="riadok"] .lineform .q { font: 400 clamp(26px, 3vw, 38px)/1 var(--sans); color: var(--moon); }
+      [data-v="riadok"] .lineform button { flex: none; width: 46px; height: 46px; border-radius: 50%; border: 1px solid var(--rim); background: transparent; color: var(--ink); font-size: 18px; cursor: pointer; transition: background .2s; }
+      [data-v="riadok"] .lineform button:hover { background: rgba(255,255,255,.08); }
+      [data-v="riadok"] .lineform button:focus-visible { outline: 2px solid var(--moon); outline-offset: 2px; }
+      [data-v="riadok"] [data-results] { background: transparent; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; padding: 6px 0 0; top: 100%; }
+      [data-v="riadok"] [data-results] li[role="option"] { grid-template-columns: minmax(0,1fr) auto; padding: 10px 0; border-radius: 0; border-bottom: 1px solid var(--line); background: transparent !important; }
+      [data-v="riadok"] .r-kind { display: none; }
+      [data-v="riadok"] .r-group { padding: 14px 0 2px; font: 500 10px/1 var(--mono); text-transform: uppercase; letter-spacing: 0.12em; color: var(--dim); }
+      [data-v="riadok"] .r-label { font-size: 20px; font-weight: 300; letter-spacing: -0.02em; color: var(--mute); transition: color .15s, transform .2s; }
+      [data-v="riadok"] li[aria-selected="true"] .r-label { color: var(--ink); transform: translateX(6px); }
+      [data-v="riadok"] [data-results] { background: var(--bg); padding-bottom: 14px; }
+
+
+      .cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; padding-block: 24px 40px; }
+      .card { border-radius: 26px; padding: 24px; min-width: 0; }
+      .card .k { font: 500 10px/1 var(--mono); text-transform: uppercase; letter-spacing: .1em; color: var(--moon); }
+      .card h2 { margin: 12px 0 6px; font-size: 21px; font-weight: 500; letter-spacing: -0.025em; }
+      .card p { margin: 0; color: var(--mute); font-size: 14px; }
+      .card ul { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 6px; font: 400 12px/1.4 var(--mono); color: var(--mute); }
+      .card li { display: flex; justify-content: space-between; gap: 10px; padding-top: 7px; border-top: 1px solid var(--line); }
+      .card li b { color: var(--ink); font-weight: 500; }
+      footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px; padding-block: 20px 32px; border-top: 1px solid var(--line); font: 400 12px/1.5 var(--mono); color: var(--dim); }
+      footer a { color: var(--mute); }
+
+      .rise { animation: rise .9s cubic-bezier(.2,.7,.2,1) both; }
+      .d1 { animation-delay: .05s } .d2 { animation-delay: .15s } .d3 { animation-delay: .25s } .d4 { animation-delay: .35s } .d5 { animation-delay: .5s }
+      @keyframes rise { from { opacity: 0; transform: translateY(14px) } to { opacity: 1; transform: none } }
+
+      @media (max-width: 960px) {
+        .stage { grid-template-columns: 1fr; min-height: 0; }
+        .mapbox { height: 74vw; min-height: 340px; margin-right: 0; }
+        .cards { grid-template-columns: 1fr; }
+        .bar nav { display: none; }
+        .tip { width: 200px; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .cone, .dot, .rise, [data-v="riadok"] .lineform::after { animation: none !important; }
+        .tip { transition: opacity .2s; }
+      }
+    </style>
+  </head>
+  <body>
+    <svg
+      width="0"
+      height="0"
+      style="position: absolute"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <filter
+        id="liquid"
+        x="0"
+        y="0"
+        width="100%"
+        height="100%"
+        color-interpolation-filters="sRGB"
+      >
+        <feTurbulence
+          type="fractalNoise"
+          baseFrequency="0.006 0.012"
+          numOctaves="2"
+          seed="11"
+          result="noise"
+        />
+        <feGaussianBlur in="noise" stdDeviation="3" result="soft" />
+        <feDisplacementMap
+          in="SourceGraphic"
+          in2="soft"
+          scale="40"
+          xChannelSelector="R"
+          yChannelSelector="G"
+        />
+      </filter>
+    </svg>
+    <div class="sky" aria-hidden="true">
+      <div class="halo"></div>
+      <div class="cone"></div>
+      <div class="grain"></div>
+    </div>
+
+    <div class="page">
+      <header class="bar glass">
+        <a class="brand" href="#"><i aria-hidden="true"></i>Koho volím</a>
+        <nav aria-label="Hlavná navigácia">
+          <a href="kandidati.html">Kandidáti</a><a href="metodika.html">Metodika</a><a href="zdroje.html">Zdroje</a><a href="opravy.html">Opravy</a>
+        </nav>
+        <div class="seg" aria-label="Jazyk">
+          <a href="#" aria-current="true">SK</a><a href="#">HU</a
+          ><a href="#">EN</a>
+        </div>
+      </header>
+
+      <main class="stage">
+        <section class="copy">
+          <p class="pill glass rise d1">
+            <span class="dot" aria-hidden="true"></span
+            ><span data-cd-label>Miestnosti sa otvárajú o</span>
+            <b data-cd>…</b>
+          </p>
+          <h1 class="rise d2">Každý kandidát.<br /><span>Iba fakty.</span></h1>
+          <p class="lede rise d3">
+            <b>5 460 kandidátov</b> zo 354 obcí Nitrianskeho kraja. Pri každom
+            údaji je odkaz na verejný zdroj a dátum získania.
+          </p>
+
+          <div class="search-slot rise d4">
+            <div class="variant" data-v="riadok">
+              <form
+                class="kv-search"
+                id="f-riadok"
+                data-search
+                data-group
+                data-limit="7"
+                data-base=""
+                role="search"
+                autocomplete="off"
+              >
+                <div class="lineform">
+                  <span class="q" aria-hidden="true">→</span>
+                  <label for="q5" class="vh"
+                    >Hľadať kandidáta, stranu alebo obec</label
+                  >
+                  <input
+                    id="q5"
+                    name="q"
+                    type="search"
+                    placeholder="Želiezovce"
+                  />
+                  <button type="submit" aria-label="Hľadať">↵</button>
+                </div>
+                <ul data-results></ul>
+                <p data-status role="status" aria-live="polite"></p>
+              </form>
+            </div>
+          </div>
+
+          <div class="chips rise d5" id="chips" aria-label="Okresy"></div>
+        </section>
+
+        <div class="mapbox rise d3">
+          <canvas
+            id="map"
+            role="img"
+            aria-label="Mapa Nitrianskeho kraja s hranicami 354 obcí a 7 okresov"
+          ></canvas>
+          <div class="tip glass" id="tip" aria-live="polite">
+            <small id="tip-kind">Okres</small><b id="tip-name">Nitra</b>
+            <dl id="tip-dl"></dl>
+          </div>
+          <span class="legend-note"
+            >Hranice obcí a okresov · geoBoundaries</span
+          >
+        </div>
+      </main>
+
+      <section class="cards" aria-label="Čo obsahuje profil kandidáta">
+        <article class="card glass">
+          <span class="k">Kandidatúry 2026</span>
+          <h2>Kde všade kandiduje</h2>
+          <p>Každá voľba s poradovým číslom na lístku, stranou a povolaním.</p>
+          <ul>
+            <li>Zdroj <b>MV SR</b></li>
+            <li>Stav <b>23. 10. 2026</b></li>
+          </ul>
+        </article>
+        <article class="card glass">
+          <span class="k">Volebná história</span>
+          <h2>Ako dopadol predtým</h2>
+          <p>Minulé kandidatúry, výsledok a počet hlasov.</p>
+          <ul>
+            <li>Zdroj <b>Štatistický úrad SR</b></li>
+            <li>Obdobie <b>2010 – 2022</b></li>
+          </ul>
+        </article>
+        <article class="card glass">
+          <span class="k">Firmy a funkcie</span>
+          <h2>Kde pôsobí</h2>
+          <p>Funkcie v spoločnostiach s dátumom od a do a dôvodom zhody.</p>
+          <ul>
+            <li>Zdroj <b>RPVS, ORSR</b></li>
+            <li>Hodnotenia <b>žiadne</b></li>
+          </ul>
+        </article>
+      </section>
+
+      <footer>
+        <span
+          >Kandidáti: MV SR, stav k 23. 10. 2026 · Hranice: geoBoundaries (CC BY
+          4.0) · Názvy obcí: Wikidata</span
+        >
+        <span><a href="metodika.html">Metodika</a> · <a href="opravy.html">Nahlásiť chybu</a></span>
+      </footer>
+    </div>
+
+    <script src="geo.js"></script>
+    <script src="sample.js"></script>
+    <script src="search.js"></script>
+    <script src="map.js"></script>
+    <script>
+      (function () {
+        if (
+          navigator.userAgentData &&
+          navigator.userAgentData.brands.some((b) => /Chrom/.test(b.brand))
+        )
+          document.documentElement.classList.add("refract");
+        const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+        function fill(ok, ob) {
+          const input = document.getElementById("q5");
+          input.value = ob || "Okres " + ok;
+          input.focus();
+          input.dispatchEvent(new Event("input"));
+        }
+
+        const chips = document.getElementById("chips");
+        chips.innerHTML = KV.OKRESY.map(
+          (o) =>
+            '<button type="button" class="chip glass" data-ok="' +
+            o.name +
+            '">' +
+            o.name +
+            " <small>" +
+            o.obce +
+            "</small></button>",
+        ).join("");
+
+        const tip = document.getElementById("tip");
+        const fmt = (n) => String(n).replace(".", ",");
+        const map = KVMap(document.getElementById("map"), {
+          mode: "borders",
+          alignX: 0.55,
+          glow: true,
+          font: "'Geist Mono', ui-monospace, monospace",
+          labelFont: "Geist, system-ui, sans-serif",
+          onClick: fill,
+          onHover(ok, ob) {
+            chips
+              .querySelectorAll(".chip")
+              .forEach((c) => c.classList.toggle("on", c.dataset.ok === ok));
+            if (!ok && !ob) {
+              tip.classList.remove("on");
+              return;
+            }
+            const [W, H] = map.size();
+            let p;
+            if (ob) {
+              const o = map.obec(ob);
+              p = map.obecPx(ob);
+              document.getElementById("tip-kind").textContent = "Obec";
+              document.getElementById("tip-name").textContent = ob;
+              document.getElementById("tip-dl").innerHTML =
+                "<dt>Okres</dt><dd>" +
+                o.okres +
+                "</dd><dt>Rozloha</dt><dd>" +
+                fmt(o.km2.toFixed(1)) +
+                " km²</dd><dt>Lístkov na voliča</dt><dd>4</dd>";
+            } else {
+              const d = KV.OKRESY.find((o) => o.name === ok);
+              p = map.seatPx(ok);
+              document.getElementById("tip-kind").textContent = "Okres";
+              document.getElementById("tip-name").textContent = ok;
+              document.getElementById("tip-dl").innerHTML =
+                "<dt>Obcí</dt><dd>" +
+                d.obce +
+                "</dd><dt>Rozloha</dt><dd>" +
+                fmt(Math.round(KVGEO.okresy.find((o) => o.name === ok).km2)) +
+                " km²</dd><dt>Kliknutím</dt><dd>hľadať</dd>";
+            }
+            const tw = tip.offsetWidth,
+              th = tip.offsetHeight;
+            tip.style.left =
+              Math.max(8, Math.min(W - tw - 8, p[0] + 28)) + "px";
+            tip.style.top =
+              Math.max(8, Math.min(H - th - 8, p[1] - th - 18)) + "px";
+            tip.classList.add("on");
+          },
+        });
+        chips.querySelectorAll(".chip").forEach((c) => {
+          c.addEventListener("mouseenter", () => map.hover(c.dataset.ok));
+          c.addEventListener("mouseleave", () => map.hover(null));
+          c.addEventListener("click", () => fill(c.dataset.ok));
+        });
+
+        // placeholder types out real searches
+        const q5 = document.getElementById("q5");
+        const samples = [
+          "Želiezovce",
+          "Ján Vzorový",
+          "Predseda NSK",
+          "Okres Levice",
+          "Eva Príkladná",
+          "Štúrovo",
+          "Poslanci zastupiteľstva NSK",
+          "Hurbanovo",
+        ];
+        if (!reduce) {
+          let si = 0,
+            ci = 0,
+            del = false;
+          setInterval(() => {
+            const w = samples[si];
+            if (!del) {
+              ci++;
+              if (ci > w.length + 14) del = true;
+            } else {
+              ci -= 2;
+              if (ci <= 0) {
+                del = false;
+                ci = 0;
+                si = (si + 1) % samples.length;
+              }
+            }
+            q5.placeholder =
+              w.slice(0, Math.min(ci, w.length)) +
+              (ci <= w.length && !del ? "▍" : "");
+          }, 85);
+        }
+
+        const out = document.querySelector("[data-cd]"),
+          label = document.querySelector("[data-cd-label]");
+        function tick() {
+          const p = KV.phase();
+          if (p.phase === "closed") {
+            label.textContent = "Voľby 24. 10. 2026 sa skončili";
+            out.textContent = "";
+            return;
+          }
+          const t = KV.parts(p.ms);
+          label.textContent =
+            p.phase === "open"
+              ? "Miestnosti sú otvorené ešte"
+              : "Miestnosti sa otvárajú o";
+          out.textContent =
+            (t.d ? t.d + " d " : "") +
+            t.h +
+            " h " +
+            KV.pad(t.m) +
+            " min " +
+            KV.pad(t.s) +
+            " s";
+        }
+        tick();
+        setInterval(tick, 1000);
+      })();
+    </script>
+  </body>
+</html>

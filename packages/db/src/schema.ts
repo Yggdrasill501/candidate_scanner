@@ -91,6 +91,15 @@ export interface Election {
   kind: string;
 }
 
+export interface ElectionResultSnapshot {
+  http_status: number;
+  id: Generated<string>;
+  payload: Json;
+  retrieved_at: Generated<Timestamp>;
+  sha256: string;
+  url: string;
+}
+
 export interface ElectoralDistrict {
   election_code: string;
   id: Generated<string>;
@@ -292,6 +301,7 @@ export interface DB {
   body_member: BodyMember;
   candidacy: Candidacy;
   election: Election;
+  election_result_snapshot: ElectionResultSnapshot;
   electoral_district: ElectoralDistrict;
   fact: Fact;
   municipality: Municipality;

@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Metodika · Koho volím</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="site.css">
+<style>
+/* Layout: a reading page; three principles up top, then a sticky contents list beside a 68ch text column. */
+.principles { margin-top: 36px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.principles div { border-radius: 22px; padding: 22px; }
+.principles b { display: block; font-size: 20px; font-weight: 500; letter-spacing: -0.02em; }
+.principles p { margin: 8px 0 0; color: var(--mute); font-size: 14px; }
+.principles span { font: 500 11px/1 var(--mono); color: var(--moon); }
+
+.read { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 48px; margin-top: 56px; }
+.toc { position: sticky; top: 100px; align-self: start; display: grid; gap: 2px; counter-reset: t; }
+.toc a { display: grid; grid-template-columns: 26px 1fr; padding: 8px 10px; border-radius: 10px; color: var(--mute); text-decoration: none; font-size: 14px; counter-increment: t; }
+.toc a::before { content: counter(t, decimal-leading-zero); font: 400 11px/1.9 var(--mono); color: var(--dim); }
+.toc a:hover { color: var(--ink); }
+.toc a.on { color: var(--ink); background: rgba(255,255,255,.06); }
+.toc .ver { margin-top: 14px; padding: 0 10px; font: 400 11px/1.6 var(--mono); color: var(--dim); }
+
+article { max-width: 70ch; }
+article section { scroll-margin-top: 100px; padding-bottom: 36px; }
+article section + section { border-top: 1px solid var(--line); padding-top: 32px; }
+article h2 { margin: 0 0 14px; font-size: 26px; font-weight: 500; letter-spacing: -0.03em; text-wrap: balance; }
+article p, article li { color: #C9CDD8; font-size: 16px; line-height: 1.7; }
+article p { margin: 0 0 14px; }
+article strong { color: var(--ink); font-weight: 500; }
+article ol, article ul { margin: 0 0 14px; padding-left: 22px; }
+article li + li { margin-top: 8px; }
+article a { color: var(--moon); text-underline-offset: 3px; }
+.callout { border-radius: 18px; padding: 18px 20px; margin: 18px 0; }
+.callout .eyebrow { display: block; margin-bottom: 10px; }
+.example { font: 400 13px/1.7 var(--mono); color: var(--mute); }
+.example b { color: var(--ink); font-weight: 500; }
+.example .m { color: var(--ink); }
+.dont { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 16px 0; }
+.dont div { padding: 14px 16px; border-radius: 14px; background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); font-size: 14px; color: var(--mute); }
+.dont div b { display: block; color: var(--ink); font-weight: 500; margin-bottom: 4px; }
+
+@media (max-width: 900px) {
+  .principles { grid-template-columns: 1fr; }
+  .read { grid-template-columns: 1fr; gap: 20px; }
+  .toc { position: static; display: flex; overflow-x: auto; }
+  .toc a { white-space: nowrap; display: block; }
+  .toc a::before { margin-right: 6px; }
+  .toc .ver { display: none; }
+  .dont { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body data-page="metodika">
+<div class="page">
+  <p class="crumbs rise d1"><a href="uvod.html">Úvod</a><span>Metodika</span></p>
+  <h1 class="title rise d1">Ako vzniká každý profil</h1>
+  <p class="lede rise d2">Zbierame verejne dostupné fakty o všetkých kandidátoch v Nitrianskom kraji. Každý kandidát prechádza rovnakým postupom a pri každom údaji uvádzame zdroj, dátum získania a dôvod, prečo ho pripisujeme práve jemu.</p>
+
+  <div class="principles rise d3">
+    <div class="glass"><span>01</span><b>Iba fakty</b><p>Žiadne hodnotenia, skóre, odporúčania ani farby strán. Stránka nikoho nepodporuje.</p></div>
+    <div class="glass"><span>02</span><b>Rovnako pre každého</b><p>Rovnaké zdroje, rovnaké sekcie a poradie podľa hlasovacieho lístka.</p></div>
+    <div class="glass"><span>03</span><b>Nič sa neskrýva</b><p>Ak niečo nenájdeme, napíšeme to. Namietaný údaj ostáva viditeľný aj s námietkou.</p></div>
+  </div>
+
+  <div class="read">
+    <nav class="toc" id="toc" aria-label="Obsah">
+      <a href="#rozsah">Čo pokrývame</a>
+      <a href="#postup">Rovnaký postup</a>
+      <a href="#zdroje">Zdroje</a>
+      <a href="#zhoda">Priradenie k osobe</a>
+      <a href="#zhrnutie">Zhrnutie AI</a>
+      <a href="#namietky">Námietky a opravy</a>
+      <a href="#nepokryvame">Čo zatiaľ nepokrývame</a>
+      <a href="#overenie">Overiteľnosť</a>
+      <p class="ver">Metodika, verzia 1.0<br>23. 10. 2026</p>
+    </nav>
+
+    <article>
+      <section id="rozsah">
+        <h2>Čo pokrývame</h2>
+        <p>Všetkých kandidátov vo voľbách do orgánov samosprávy obcí a samosprávnych krajov <strong>24. októbra 2026</strong> v Nitrianskom kraji: starostov a primátorov, poslancov obecných a mestských zastupiteľstiev, predsedu Nitrianskeho samosprávneho kraja a poslancov jeho zastupiteľstva. Je to približne <strong>5 460 osôb v 354 obciach a 7 okresoch</strong>.</p>
+        <p>Pri každom kandidátovi zobrazujeme jeho kandidatúry v roku 2026, volebnú históriu od roku 2010 a funkcie vo firmách podľa verejných registrov.</p>
+      </section>
+
+      <section id="postup">
+        <h2>Rovnaký postup pre každého</h2>
+        <p>Zber robia automatické úlohy, ktoré prejdú každého kandidáta rovnako. Webová stránka údaje len číta z databázy a počas návštevy nič nesťahuje.</p>
+        <ol>
+          <li><strong>Kandidáti.</strong> Oficiálne zoznamy kandidátov Ministerstva vnútra SR.</li>
+          <li><strong>História.</strong> Výsledky volieb 2010 – 2022 zo Štatistického úradu SR.</li>
+          <li><strong>Firmy.</strong> Register partnerov verejného sektora a Obchodný register SR.</li>
+          <li><strong>Zhrnutie.</strong> Krátky text vytvorený len z faktov, ktoré sme v predchádzajúcich krokoch uložili.</li>
+        </ol>
+        <p>Kandidátov vždy radíme podľa čísla na hlasovacom lístku. Každý profil má rovnaké sekcie v rovnakom poradí. Ak v niektorom zdroji nič nenájdeme, sekcia to výslovne uvedie: <em>Nenájdené v: …</em></p>
+      </section>
+
+      <section id="zdroje">
+        <h2>Zdroje</h2>
+        <p>Používame len verejné zdroje. Úplný zoznam s odkazmi, rozsahom a dátumom posledného zberu je na stránke <a href="zdroje.html">Zdroje</a>. Ak zdroj pri zbere nebol dostupný, profil to uvedie namiesto „Nenájdené“, aby nebolo možné zameniť výpadok za prázdny výsledok.</p>
+      </section>
+
+      <section id="zhoda">
+        <h2>Ako priradíme záznam k osobe</h2>
+        <p>Registre neobsahujú rodné čísla, preto záznamy spájame podľa mena a ďalších údajov. Pri každom priradení ukážeme, ktoré údaje sa zhodujú.</p>
+        <ol>
+          <li><strong>Kandidatúry 2026:</strong> rovnaké meno a vek v tej istej obci znamenajú tú istú osobu, aj keď kandiduje vo viacerých voľbách.</li>
+          <li><strong>Volebná história:</strong> meno, obec a vek v danom roku (±1 rok). Ak sa zhoduje viac osôb, záznam ukážeme pri každej z nich s označením <em>nejednoznačná zhoda</em>.</li>
+          <li><strong>Firmy:</strong> zhoda mena; navyše uvádzame, či sedí obec bydliska a rok narodenia, ak ich zdroj obsahuje, a koľko kandidátov v kraji má rovnaké meno.</li>
+          <li>Tituly na zhodu nepoužívame, pretože sa v čase menia.</li>
+        </ol>
+        <div class="callout glass">
+          <span class="eyebrow">Príklad zápisu v profile · fiktívne údaje</span>
+          <div class="example">
+            <b>Konateľ, Vzorová stavebná s.r.o.</b>, IČO 12345678 (2011 – dodnes) · ORSR<br>
+            Zhoda: <span class="m">meno ✓</span> · <span class="m">obec bydliska ✓ Šahy</span> · rok narodenia – neuvedený v zdroji<br><br>
+            <b>Spoločník, Príklad Agro s.r.o.</b>, IČO 87654321 (2009 – 2016) · ORSR<br>
+            Zhoda: <span class="m">meno ✓</span> · <span class="m">obec bydliska ✕ Levice</span> · v kraji 2 kandidáti s týmto menom
+          </div>
+        </div>
+        <p>Žiadne priradenie neskrývame. Slabšiu zhodu zobrazíme aj s jej obmedzeniami, aby si čitateľ mohol urobiť vlastný úsudok.</p>
+      </section>
+
+      <section id="zhrnutie">
+        <h2>Zhrnutie vytvorené umelou inteligenciou</h2>
+        <p>Na začiatku profilu je 3 až 5 viet, ktoré zhrnú fakty z profilu. Pravidlá:</p>
+        <ul>
+          <li>Text vzniká <strong>len z faktov uložených v profile</strong>, nie z internetu ani z pamäti modelu.</li>
+          <li>Každá veta má číslo, ktoré vedie na fakt, z ktorého vychádza.</li>
+          <li>Zhrnutie neobsahuje hodnotiace slová, prirovnania ani odporúčania.</li>
+          <li>Je dostupné po slovensky, maďarsky a anglicky. Mená, strany a názvy firiem ostávajú v pôvodnom znení.</li>
+          <li>Pri zmene faktov sa zhrnutie vytvorí znova.</li>
+        </ul>
+        <p>Zhrnutie je vždy označené ako vytvorené umelou inteligenciou. Fakty pod ním majú prednosť.</p>
+      </section>
+
+      <section id="namietky">
+        <h2>Námietky a opravy</h2>
+        <p>Kandidát aj ktokoľvek iný môže namietať údaj alebo upozorniť na chybu. Postupujeme takto:</p>
+        <div class="dont">
+          <div><b>Namietaný údaj neskrývame</b>Zobrazíme ho ďalej a hneď pri ňom vyjadrenie kandidáta aj našu odpoveď.</div>
+          <div><b>Údaj meníme podľa zdroja</b>Opravu urobíme, keď zdroj preukáže chybu alebo keď sa zdroj zmení.</div>
+          <div><b>Zámena osoby je oprava</b>Ak sme záznam priradili nesprávnej osobe, odstránime priradenie a uvedieme to.</div>
+          <div><b>Každá zmena je verejná</b>Všetky opravy zapisujeme do protokolu s dátumom a dôvodom.</div>
+        </div>
+        <p>Postup a protokol zmien sú na stránke <a href="opravy.html">Opravy</a>.</p>
+      </section>
+
+      <section id="nepokryvame">
+        <h2>Čo zatiaľ nepokrývame</h2>
+        <p>Nasledujúce údaje pripravujeme. Do profilov ich pridáme len vtedy, keď ich budeme vedieť zbierať rovnako pre všetkých kandidátov:</p>
+        <ul>
+          <li><strong>Hlasovania v zastupiteľstvách</strong> z menovitých hlasovaní, ktoré obce zverejňujú.</li>
+          <li><strong>Výroky na zasadnutiach</strong> z prepisov záznamov zasadnutí.</li>
+          <li><strong>Sociálne siete</strong>, len verejné stránky a príspevky bez komentárov.</li>
+          <li><strong>Médiá</strong>, články, v ktorých sa kandidát spomína.</li>
+        </ul>
+        <p>Nezbierame súkromné údaje: adresy, rodinné pomery, zdravie ani nič, čo nie je verejne a oficiálne zverejnené.</p>
+      </section>
+
+      <section id="overenie">
+        <h2>Overiteľnosť</h2>
+        <p>Pri každom zbere uložíme nemennú kópiu stiahnutého dokumentu s odtlačkom SHA-256 a časom stiahnutia. Každý fakt odkazuje na pôvodný zdroj aj na túto kópiu. Ak sa zdroj neskôr zmení, vieme ukázať, čo uvádzal v čase zberu.</p>
+      </section>
+    </article>
+  </div>
+</div>
+
+<script src="geo.js"></script>
+<script src="sample.js"></script>
+<script src="chrome.js"></script>
+<script src="search.js"></script>
+<script>
+(function () {
+  // highlight the section in view
+  const links = [...document.querySelectorAll("#toc a")];
+  const io = new IntersectionObserver((es) => {
+    es.forEach((e) => { if (e.isIntersecting) links.forEach((a) => a.classList.toggle("on", a.getAttribute("href") === "#" + e.target.id)); });
+  }, { rootMargin: "-40% 0px -55% 0px" });
+  document.querySelectorAll("article section").forEach((s) => io.observe(s));
+})();
+</script>
+</body>
+</html>

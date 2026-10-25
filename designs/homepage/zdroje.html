@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Zdroje · Koho volím</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="site.css">
+<style>
+/* Layout: a status strip, then one card per source grouped by role, each with the same fields in the same order. */
+.strip { margin-top: 32px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.strip div { border-radius: 18px; padding: 18px 20px; }
+.strip b { display: block; font-size: 26px; font-weight: 500; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.strip span { font: 400 11px/1.4 var(--mono); color: var(--mute); }
+
+.group { margin-top: 48px; }
+.group > h2 { margin: 0 0 6px; font-size: 22px; font-weight: 500; letter-spacing: -0.03em; }
+.group > p { margin: 0 0 18px; color: var(--mute); max-width: 70ch; }
+.cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.src-card { border-radius: 22px; padding: 22px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.src-card .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.status { display: inline-flex; align-items: center; gap: 7px; font: 500 10px/1 var(--mono); text-transform: uppercase; letter-spacing: .1em; padding: 6px 9px; border-radius: 999px; }
+.status::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.status.on { color: var(--moon); background: rgba(175,193,255,.08); }
+.status.backup { color: var(--mute); background: rgba(255,255,255,.05); }
+.status.soon { color: var(--dim); background: rgba(255,255,255,.03); }
+.status.on::before { box-shadow: 0 0 8px var(--moon); }
+.src-card h3 { margin: 0; font-size: 19px; font-weight: 500; letter-spacing: -0.02em; }
+.src-card .url { font: 400 12px/1.4 var(--mono); color: var(--mute); text-decoration: none; word-break: break-all; }
+.src-card .url:hover { color: var(--moon); }
+.src-card dl { margin: 0; display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 8px 14px; font-size: 14px; }
+.src-card dt { font: 400 11px/1.9 var(--mono); color: var(--dim); text-transform: uppercase; letter-spacing: .06em; }
+.src-card dd { margin: 0; color: #C9CDD8; }
+.src-card dd.date { font-family: var(--mono); font-size: 13px; }
+.src-card dd.date em { font-style: normal; color: var(--warn); font-size: 11px; margin-left: 6px; }
+.src-card.dim { opacity: .75; }
+
+.states { margin-top: 48px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.states div { padding: 18px 20px; border-radius: 18px; background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); }
+.states b { display: block; font-weight: 500; margin-bottom: 6px; }
+.states p { margin: 0; color: var(--mute); font-size: 14px; }
+.states code { font: 400 12px/1 var(--mono); color: var(--ink); }
+
+@media (max-width: 900px) {
+  .strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cards, .states { grid-template-columns: 1fr; }
+  .src-card dl { grid-template-columns: 1fr; gap: 2px; }
+  .src-card dd { margin-bottom: 8px; }
+}
+</style>
+</head>
+<body data-page="zdroje">
+<div class="page">
+  <p class="crumbs rise d1"><a href="uvod.html">Úvod</a><span>Zdroje</span></p>
+  <h1 class="title rise d1">Odkiaľ údaje pochádzajú</h1>
+  <p class="lede rise d2">Používame len verejné zdroje. Pri každom zbere uložíme kópiu dokumentu s odtlačkom SHA-256, aby sa dalo overiť, čo zdroj v danom čase uvádzal. Dátumy označené <span style="color:var(--warn)">ukážka</span> sú v tomto návrhu ilustračné.</p>
+
+  <div class="strip rise d3">
+    <div class="glass"><b>5</b><span>zdrojov o kandidátoch</span></div>
+    <div class="glass"><b>2</b><span>zdroje pre mapu a názvy obcí</span></div>
+    <div class="glass"><b>3</b><span>zdroje v príprave</span></div>
+    <div class="glass"><b>23. 10.</b><span>posledný zber zoznamov kandidátov</span></div>
+  </div>
+
+  <div class="group">
+    <h2>Údaje o kandidátoch</h2>
+    <p>Z týchto zdrojov vznikajú profily. Každý kandidát sa v nich vyhľadáva rovnako.</p>
+    <div class="cards" id="people"></div>
+  </div>
+
+  <div class="group">
+    <h2>Mapa a názvy obcí</h2>
+    <p>Hranice obcí a okresov na mape a správne slovenské názvy obcí.</p>
+    <div class="cards" id="geo"></div>
+  </div>
+
+  <div class="group">
+    <h2>V príprave</h2>
+    <p>Tieto zdroje do profilov pridáme, keď ich budeme vedieť spracovať rovnako pre všetkých kandidátov. <a href="metodika.html#nepokryvame" style="color:var(--moon)">Viac v metodike</a></p>
+    <div class="cards" id="soon"></div>
+  </div>
+
+  <div class="states">
+    <div><b>Nájdené</b><p>Zdroj obsahuje záznam, ktorý sme priradili kandidátovi. Pri zázname je dôvod zhody.</p></div>
+    <div><b>Nenájdené</b><p>Zdroj bol dostupný, ale záznam o kandidátovi neobsahuje. Profil uvedie <code>Nenájdené v: …</code></p></div>
+    <div><b>Nedostupný</b><p>Zdroj pri zbere neodpovedal. Profil uvedie dátum výpadku a zber zopakujeme.</p></div>
+  </div>
+</div>
+
+<script src="geo.js"></script>
+<script src="sample.js"></script>
+<script src="chrome.js"></script>
+<script src="search.js"></script>
+<script>
+(function () {
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  // [status, name, url, what, how often, format, terms, last collection, sample?]
+  const SOURCES = {
+    people: [
+      ["on", "Zoznamy kandidátov · Ministerstvo vnútra SR", "https://www.minv.sk/?samosprava26-info10", "Meno, tituly, vek, povolanie, strana, číslo na lístku, obec a volebný obvod", "Pri každej zmene zoznamov do dňa volieb", "XLSX", "Verejné úradné údaje", "23. 10. 2026", false],
+      ["on", "Výsledky volieb · Štatistický úrad SR", "https://volby.statistics.sk/", "Kandidatúry 2010 – 2022, výsledok a počet hlasov", "Raz, po zverejnení výsledkov", "HTML, XLSX", "Verejné úradné údaje", "21. 10. 2026", true],
+      ["on", "Register partnerov verejného sektora", "https://rpvs.gov.sk/", "Konečný užívateľ výhod, partner verejného sektora, rok narodenia", "Pri každom behu zberu", "OData API", "Verejný register", "22. 10. 2026", true],
+      ["on", "Obchodný register SR", "https://www.orsr.sk/", "Konateľ, spoločník, člen orgánu, IČO, dátumy od a do", "Pri každom behu zberu", "HTML", "Verejný register", "22. 10. 2026", true],
+      ["backup", "Výsledky volieb · SME", "https://volby.sme.sk/", "Výsledky 2010 – 2022, len ak Štatistický úrad nie je dostupný. Údaje označíme ako sekundárne.", "Len pri výpadku primárneho zdroja", "HTML", "Novinový archív", "—", false],
+    ],
+    geo: [
+      ["on", "geoBoundaries · hranice okresov a obcí", "https://www.geoboundaries.org/", "Hranice 7 okresov a 354 obcí Nitrianskeho kraja", "Raz, pri zmene hraníc", "GeoJSON", "CC BY 4.0", "23. 10. 2026", false],
+      ["on", "Wikidata · názvy obcí", "https://www.wikidata.org/", "Slovenské názvy obcí a ich poloha, na opravu názvov z geoBoundaries", "Raz, pri zmene hraníc", "SPARQL", "CC0", "23. 10. 2026", false],
+    ],
+    soon: [
+      ["soon", "Menovité hlasovania zastupiteľstiev", "https://www.nitra.sk/", "Ako hlasoval poslanec pri jednotlivých bodoch zasadnutia", "Po každom zasadnutí", "PDF", "Zverejnené obcou", "—", false],
+      ["soon", "Záznamy zasadnutí zastupiteľstiev", "https://www.youtube.com/", "Prepisy vystúpení poslancov zo záznamov zasadnutí", "Po každom zasadnutí", "Video, titulky", "Zverejnené obcou", "—", false],
+      ["soon", "Verejné stránky na Facebooku", "https://www.facebook.com/", "Príspevky z verejných stránok kandidátov, bez komentárov", "Denne počas kampane", "HTML", "Verejný obsah", "—", false],
+    ],
+  };
+  const LABEL = { on: "aktívny", backup: "záložný", soon: "v príprave" };
+  for (const [id, list] of Object.entries(SOURCES)) {
+    document.getElementById(id).innerHTML = list.map(([st, name, url, what, freq, fmt, terms, date, sample]) =>
+      '<article class="src-card glass' + (st === "soon" ? " dim" : "") + '"><div class="top"><span class="status ' + st + '">' + LABEL[st] + '</span></div><div><h3>' + esc(name) +
+      '</h3><a class="url" href="' + url + '" target="_blank" rel="noopener">' + esc(url.replace(/^https:\/\//, "")) + ' ↗</a></div><dl>' +
+      "<dt>Čo berieme</dt><dd>" + esc(what) + "</dd><dt>Ako často</dt><dd>" + esc(freq) + "</dd><dt>Formát</dt><dd>" + esc(fmt) + "</dd><dt>Podmienky</dt><dd>" + esc(terms) +
+      '</dd><dt>Posledný zber</dt><dd class="date">' + date + (sample ? "<em>ukážka</em>" : "") + "</dd></dl></article>").join("");
+  }
+})();
+</script>
+</body>
+</html>

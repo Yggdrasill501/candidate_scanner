@@ -1,0 +1,288 @@
+/* Shared components for the round-2 drafts: glow-ring search, liquid glass, suggestion list.
+   Each page defines the tokens: --ink --mute --glass --glass-strong --rim --spec --shade
+   --ring-base --ring-a --ring-b --ring-glow --search-bg --sans --mono. */
+
+/* liquid glass */
+.glass {
+  position: relative;
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(22px) saturate(175%);
+  backdrop-filter: blur(22px) saturate(175%);
+  box-shadow:
+    inset 0 1px 0 var(--spec),
+    inset 0 -1px 1px rgba(255, 255, 255, 0.08),
+    0 1px 1px rgba(0, 0, 0, 0.04),
+    0 18px 50px -18px var(--shade);
+}
+.glass::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  background: linear-gradient(
+    135deg,
+    var(--rim),
+    transparent 38%,
+    transparent 62%,
+    var(--rim)
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+.refract .lens {
+  -webkit-backdrop-filter: url(#liquid) blur(8px) saturate(180%);
+  backdrop-filter: url(#liquid) blur(8px) saturate(180%);
+}
+
+/* glow-ring search */
+@property --a {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+.kv-search {
+  position: relative;
+  width: 100%;
+  text-align: left;
+}
+.ring {
+  --r: var(--search-r, 18px);
+  position: relative;
+  border-radius: var(--r);
+  padding: 1.5px;
+  background: conic-gradient(
+    from var(--a),
+    var(--ring-base) 0deg,
+    var(--ring-base) 250deg,
+    var(--ring-a) 300deg,
+    var(--ring-b) 320deg,
+    var(--ring-a) 340deg,
+    var(--ring-base) 360deg
+  );
+  animation: kv-orbit 6s linear infinite;
+  box-shadow: 0 30px 80px -24px var(--ring-glow);
+}
+.ring::before {
+  /* soft bloom that travels with the bright arc */
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: calc(var(--r) + 6px);
+  z-index: -1;
+  filter: blur(14px);
+  opacity: 0.55;
+  background: conic-gradient(
+    from var(--a),
+    transparent 0deg,
+    transparent 280deg,
+    var(--ring-a) 320deg,
+    transparent 360deg
+  );
+}
+.kv-search.is-open .ring,
+.kv-search:focus-within .ring {
+  animation-duration: 2.4s;
+}
+@keyframes kv-orbit {
+  to {
+    --a: 360deg;
+  }
+}
+.ring-in {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: var(--search-h, 64px);
+  padding: 0 8px 0 20px;
+  border-radius: calc(var(--r) - 1.5px);
+  background: var(--search-bg);
+  -webkit-backdrop-filter: blur(24px) saturate(170%);
+  backdrop-filter: blur(24px) saturate(170%);
+  box-shadow: inset 0 1px 0 var(--spec);
+}
+.ring-in > svg {
+  flex: none;
+  width: 19px;
+  height: 19px;
+  color: var(--mute);
+}
+.ring-in input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ink);
+  font: 400 18px/1 var(--sans);
+  letter-spacing: -0.01em;
+}
+.ring-in input::placeholder {
+  color: var(--mute);
+  opacity: 0.85;
+}
+.ring-in kbd {
+  font: 500 12px/1 var(--mono);
+  color: var(--mute);
+  border: 1px solid var(--rim);
+  border-bottom-width: 2px;
+  border-radius: 6px;
+  padding: 4px 7px;
+}
+.ring-in .go {
+  flex: none;
+  height: calc(var(--search-h, 64px) - 16px);
+  padding: 0 16px;
+  border: 0;
+  border-radius: calc(var(--r) - 8px);
+  cursor: pointer;
+  background: var(--glass-strong);
+  color: var(--ink);
+  font: 500 14px/1 var(--sans);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow:
+    inset 0 1px 0 var(--spec),
+    0 4px 14px -6px var(--shade);
+  transition: transform 0.2s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+.ring-in .go:hover {
+  transform: scale(1.04);
+}
+.ring-in .go:active {
+  transform: scale(0.96);
+}
+.ring-in .go:focus-visible {
+  outline: 2px solid var(--ring-a);
+  outline-offset: 2px;
+}
+.vh {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* suggestions */
+.kv-search [data-results] {
+  position: absolute;
+  z-index: 30;
+  left: 0;
+  right: 0;
+  top: calc(100% + 10px);
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  border-radius: calc(var(--search-r, 18px) + 2px);
+  background: var(--glass-strong);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  backdrop-filter: blur(30px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 var(--spec),
+    0 30px 70px -20px var(--shade);
+}
+.kv-search.drop-up [data-results] {
+  top: auto;
+  bottom: calc(100% + 10px);
+}
+.kv-search [data-results] li {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 11px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  color: var(--ink);
+}
+.kv-search [data-results] li[aria-selected="true"] {
+  background: color-mix(in srgb, var(--ring-a) 16%, transparent);
+}
+.kv-search .r-kind {
+  font: 500 10px/1 var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--mute);
+}
+.kv-search .r-label {
+  font: 500 15px/1.2 var(--sans);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.kv-search .r-label mark {
+  background: none;
+  color: var(--ring-a);
+}
+.kv-search .r-meta {
+  font: 400 12px/1 var(--mono);
+  color: var(--mute);
+}
+.kv-search .r-empty {
+  padding: 12px;
+  color: var(--mute);
+}
+.kv-search [data-status] {
+  min-height: 1.4em;
+  margin: 10px 4px 0;
+  font-size: 13px;
+  color: var(--mute);
+}
+
+/* glass chip */
+.chip {
+  border: 0;
+  border-radius: 999px;
+  padding: 9px 14px;
+  color: var(--ink);
+  font: 500 13px/1 var(--sans);
+  cursor: pointer;
+  display: inline-flex;
+  gap: 8px;
+  align-items: baseline;
+  transition: transform 0.25s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+.chip small {
+  font: 400 11px/1 var(--mono);
+  color: var(--mute);
+}
+.chip:hover {
+  transform: translateY(-2px);
+}
+.chip.on {
+  background: var(--glass-strong);
+}
+.chip:focus-visible {
+  outline: 2px solid var(--ring-a);
+  outline-offset: 2px;
+}
+
+@media (max-width: 520px) {
+  .kv-search [data-results] li {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .kv-search .r-kind {
+    display: none;
+  }
+  .ring-in kbd,
+  .ring-in .go span {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ring {
+    animation: none;
+  }
+  .chip,
+  .ring-in .go {
+    transition: none;
+  }
+}

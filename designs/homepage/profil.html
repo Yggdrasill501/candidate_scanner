@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Profil kandidáta · Koho volím</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="site.css">
+<style>
+/* Layout: a hero with the name and 2026 candidacies beside a small map of the residence; below, a sticky section index and the facts in the fixed order from the spec. */
+.hero { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 32px; align-items: end; margin-top: 18px; }
+.who .titles { margin: 18px 0 0; font: 400 15px/1 var(--mono); color: var(--mute); }
+.who h1.title { margin-top: 8px; }
+.who .after { font-size: .4em; letter-spacing: -0.02em; -webkit-text-fill-color: var(--mute); }
+.meta { margin: 14px 0 0; display: flex; flex-wrap: wrap; gap: 6px 18px; color: var(--mute); font-size: 15px; }
+.meta b { color: var(--ink); font-weight: 500; }
+.cands { margin-top: 22px; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.cand { display: grid; grid-template-columns: 52px minmax(0,1fr); gap: 14px; align-items: center; padding: 14px 16px; border-radius: 18px; text-decoration: none; color: var(--ink); transition: transform .25s cubic-bezier(.3,1.4,.4,1); }
+.cand:hover { transform: translateY(-2px); }
+.cand .no { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; font: 500 18px/1 var(--mono); color: var(--moon); box-shadow: inset 0 0 0 1.5px rgba(175,193,255,.45); }
+.cand .no small { display: block; font-size: 9px; color: var(--dim); margin-top: -10px; }
+.cand b { display: block; font-weight: 500; font-size: 15px; line-height: 1.25; }
+.cand span.sub { display: block; color: var(--mute); font-size: 12px; margin-top: 3px; }
+
+.mapcard { border-radius: 24px; padding: 14px; }
+.mapcard .mapwrap { position: relative; height: 300px; }
+.mapcard canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.mapcard p { margin: 6px 4px 2px; display: flex; justify-content: space-between; font: 400 11px/1.4 var(--mono); color: var(--mute); }
+.mapcard p b { color: var(--ink); font-weight: 500; }
+
+.tabsrow { margin-top: 40px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; border-bottom: 1px solid var(--line); }
+.tabs { display: flex; gap: 4px; }
+.tabs button { border: 0; background: none; color: var(--mute); font: 500 15px/1 var(--sans); padding: 14px 14px 16px; cursor: pointer; position: relative; }
+.tabs button[aria-selected="true"] { color: var(--ink); }
+.tabs button[aria-selected="true"]::after { content: ""; position: absolute; left: 10px; right: 10px; bottom: -1px; height: 2px; border-radius: 2px; background: linear-gradient(90deg, transparent, var(--moon), #fff, var(--moon), transparent); box-shadow: 0 0 10px rgba(175,193,255,.6); }
+.examples { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font: 400 11px/1 var(--mono); color: var(--dim); padding-bottom: 8px; }
+.examples a { font: 500 12px/1 var(--sans); color: var(--mute); text-decoration: none; padding: 7px 10px; border-radius: 999px; }
+.examples a:hover { color: var(--ink); }
+.examples a[aria-current] { color: var(--ink); background: rgba(255,255,255,.08); }
+
+.layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 40px; margin-top: 28px; }
+.toc { position: sticky; top: 100px; align-self: start; display: grid; gap: 2px; }
+.toc a { display: flex; justify-content: space-between; gap: 8px; padding: 8px 12px; border-radius: 10px; color: var(--mute); text-decoration: none; font-size: 14px; }
+.toc a:hover { color: var(--ink); background: var(--glass); }
+.toc a em { font: 400 11px/1.6 var(--mono); font-style: normal; color: var(--dim); }
+.toc a.soon { color: var(--dim); }
+
+section.sec { padding-block: 8px 34px; scroll-margin-top: 100px; }
+section.sec + section.sec { border-top: 1px solid var(--line); padding-top: 30px; }
+.sec h2 { margin: 0 0 16px; display: flex; align-items: baseline; gap: 12px; font-size: 22px; font-weight: 500; letter-spacing: -0.03em; }
+.sec h2 .n { font: 400 12px/1 var(--mono); color: var(--dim); }
+.sec h2 small { margin-left: auto; font: 400 11px/1 var(--mono); color: var(--dim); letter-spacing: 0; }
+
+/* summary */
+.summary { border-radius: 22px; padding: 22px 24px; }
+.summary .head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; }
+.summary .lang { display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: rgba(255,255,255,.04); }
+.summary .lang button { border: 0; background: none; color: var(--mute); font: 500 11px/1 var(--mono); padding: 6px 9px; border-radius: 999px; cursor: pointer; }
+.summary .lang button[aria-pressed="true"] { color: var(--ink); background: rgba(255,255,255,.1); }
+.summary .lang button:disabled { opacity: .35; cursor: default; }
+.summary p.text { margin: 0; font-size: 18px; line-height: 1.65; font-weight: 300; color: #D8DCE6; max-width: 68ch; }
+.summary sup a { font: 500 11px/1 var(--mono); color: var(--moon); text-decoration: none; padding: 1px 3px; border-radius: 4px; margin-left: 1px; }
+.summary sup a:hover { background: rgba(175,193,255,.15); }
+.summary .note { margin: 14px 0 0; font: 400 11px/1.5 var(--mono); color: var(--dim); }
+
+/* facts */
+.fact { position: relative; padding: 16px 18px; border-radius: 16px; background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); transition: box-shadow .4s, background .4s; scroll-margin-top: 110px; }
+.fact + .fact { margin-top: 10px; }
+.fact.flash { background: rgba(175,193,255,.08); box-shadow: inset 0 0 0 1px rgba(175,193,255,.55), 0 0 30px -6px rgba(175,193,255,.4); }
+.fact .row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
+.fact .row .what { font-size: 16px; }
+.fact .row .what b { font-weight: 500; }
+.fact .row .when { font: 400 13px/1 var(--mono); color: var(--mute); }
+.fact .row .src { margin-left: auto; }
+.fact .ico { font: 400 12px/1 var(--mono); color: var(--mute); }
+.fact .fn { position: absolute; left: -30px; top: 18px; font: 500 11px/1 var(--mono); color: var(--dim); }
+.match { margin: 10px 0 0; display: flex; flex-wrap: wrap; gap: 6px; font: 400 12px/1 var(--mono); color: var(--mute); }
+.match > span:first-child { color: var(--dim); padding: 5px 0; }
+.match .m { padding: 5px 8px; border-radius: 6px; background: rgba(255,255,255,.04); }
+.match .m.yes::before { content: "✓ "; color: var(--ink); }
+.match .m.no::before { content: "✕ "; color: var(--ink); }
+.match .m.na::before { content: "– "; }
+.factnote { margin: 8px 0 0; font-size: 13px; color: var(--mute); }
+
+/* dispute thread: the fact stays visible, the thread sits under it */
+.dispute { margin-top: 14px; border-radius: 12px; padding: 12px 14px; background: rgba(232,194,122,.05); box-shadow: inset 0 0 0 1px rgba(232,194,122,.22); }
+.dispute .tag { display: inline-flex; align-items: center; gap: 6px; font: 500 10px/1 var(--mono); text-transform: uppercase; letter-spacing: .1em; color: var(--warn); }
+.dispute .tag::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--warn); }
+.dispute ol { list-style: none; margin: 10px 0 0; padding: 0 0 0 14px; border-left: 1px solid rgba(232,194,122,.25); display: grid; gap: 10px; }
+.dispute li b { font-weight: 500; font-size: 13px; }
+.dispute li time { font: 400 11px/1 var(--mono); color: var(--dim); margin-left: 8px; }
+.dispute li p { margin: 4px 0 0; font-size: 14px; color: #CFD3DC; }
+.dispute .rule { margin: 10px 0 0; font: 400 11px/1.5 var(--mono); color: var(--dim); }
+.dispute .rule a { color: var(--mute); }
+
+/* history table */
+.tablewrap { overflow-x: auto; border-radius: 16px; box-shadow: inset 0 0 0 1px var(--line); }
+table.hist { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; min-width: 760px; }
+.hist th { text-align: left; font: 500 10px/1 var(--mono); text-transform: uppercase; letter-spacing: .1em; color: var(--dim); padding: 14px 14px 10px; border-bottom: 1px solid var(--line); }
+.hist td { padding: 13px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.hist tr:last-child td { border-bottom: 0; }
+.hist tr.flash td { background: rgba(175,193,255,.08); }
+.hist tr { scroll-margin-top: 110px; transition: background .4s; }
+.hist td.y { font: 500 14px/1.3 var(--mono); }
+.hist td small { display: block; color: var(--mute); font-size: 12px; margin-top: 2px; }
+.hist .res { font-size: 13px; }
+.hist .res.yes { color: var(--ink); }
+.hist .res.no { color: var(--mute); }
+.hist .reason { font: 400 11px/1.4 var(--mono); color: var(--mute); }
+.hist .reason.amb { color: var(--warn); }
+
+.empty { padding: 16px 18px; border-radius: 16px; box-shadow: inset 0 0 0 1px var(--line); border-style: dashed; color: var(--mute); font-size: 14px; }
+.empty + .empty { margin-top: 10px; }
+.empty.down { box-shadow: inset 0 0 0 1px rgba(232,194,122,.25); color: #D9C8A4; }
+.empty b { color: var(--ink); font-weight: 500; }
+
+.soonlist { display: grid; gap: 8px; }
+.soonlist div { display: flex; justify-content: space-between; gap: 12px; padding: 14px 18px; border-radius: 14px; background: var(--panel); color: var(--mute); }
+.soonlist div span:last-child { font: 400 11px/1.5 var(--mono); color: var(--dim); }
+
+.research { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px; }
+.research a { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 14px 16px; border-radius: 14px; background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); color: var(--ink); text-decoration: none; font-size: 14px; }
+.research a:hover { box-shadow: inset 0 0 0 1px rgba(175,193,255,.4); }
+.research a small { display: block; color: var(--mute); font-size: 12px; }
+.research + p { margin: 10px 0 0; font: 400 11px/1.5 var(--mono); color: var(--dim); }
+
+.sources { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; counter-reset: s; }
+.sources li { display: grid; grid-template-columns: 28px minmax(0,1fr) auto; gap: 12px; align-items: start; padding: 14px 16px; border-radius: 14px; background: var(--panel); counter-increment: s; }
+.sources li::before { content: counter(s); font: 500 12px/1.6 var(--mono); color: var(--dim); }
+.sources b { font-weight: 500; }
+.sources small { display: block; font: 400 11px/1.6 var(--mono); color: var(--dim); word-break: break-all; }
+.sources .d { font: 400 12px/1.6 var(--mono); color: var(--mute); white-space: nowrap; }
+
+/* timeline */
+.timeline { list-style: none; margin: 28px 0 0; padding: 0 0 0 26px; position: relative; max-width: 860px; }
+.timeline::before { content: ""; position: absolute; left: 6px; top: 6px; bottom: 6px; width: 1px; background: linear-gradient(180deg, var(--line-2), rgba(175,193,255,.5), var(--line-2)); }
+.timeline li { position: relative; padding: 0 0 22px; }
+.timeline li::before { content: ""; position: absolute; left: -24px; top: 7px; width: 9px; height: 9px; border-radius: 50%; background: var(--bg); box-shadow: inset 0 0 0 1.5px var(--moon); }
+.timeline li.now::before { background: var(--moon); box-shadow: 0 0 0 4px rgba(175,193,255,.2); }
+.timeline .y { font: 500 13px/1 var(--mono); color: var(--moon); }
+.timeline .lab { margin-left: 10px; font: 500 10px/1 var(--mono); text-transform: uppercase; letter-spacing: .1em; color: var(--dim); }
+.timeline p { margin: 6px 0 0; display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: baseline; }
+.timeline p .src { margin-left: auto; }
+
+@media (max-width: 960px) {
+  .hero { grid-template-columns: 1fr; }
+  .mapcard .mapwrap { height: 240px; }
+  .layout { grid-template-columns: 1fr; }
+  .toc { position: static; display: flex; overflow-x: auto; gap: 4px; }
+  .toc a { white-space: nowrap; background: var(--panel); }
+  .fact .fn { display: none; }
+}
+</style>
+</head>
+<body data-page="profil">
+<div class="page">
+  <p class="crumbs rise d1"><a href="kandidati.html">Kandidáti</a><span id="crumb-race"></span><span id="crumb-name"></span></p>
+
+  <section class="hero">
+    <div class="who rise d1">
+      <span class="sample">Ukážka · fiktívna osoba</span>
+      <p class="titles" id="titles"></p>
+      <h1 class="title" id="name"></h1>
+      <p class="meta" id="meta"></p>
+      <div class="cands" id="cands"></div>
+    </div>
+    <aside class="mapcard glass rise d2" aria-label="Bydlisko na mape">
+      <div class="mapwrap"><canvas id="map" role="img" aria-label="Mapa Nitrianskeho kraja s vyznačeným bydliskom"></canvas></div>
+      <p><span>Bydlisko podľa kandidátnej listiny</span><b id="res"></b></p>
+    </aside>
+  </section>
+
+  <div class="tabsrow">
+    <div class="tabs" role="tablist" aria-label="Zobrazenie profilu">
+      <button role="tab" id="tab-o" aria-selected="true" aria-controls="overview">Prehľad</button>
+      <button role="tab" id="tab-t" aria-selected="false" aria-controls="timeline-panel">Časová os</button>
+    </div>
+    <nav class="examples" aria-label="Ukážkové profily">Ukážky:
+      <a href="#jan-vzorovy">Vzorový · primátor, námietka</a>
+      <a href="#eva-prikladna">Príkladná · prvá kandidatúra</a>
+      <a href="#gabor-minta">Minta · predseda NSK</a>
+    </nav>
+  </div>
+
+  <div class="layout" id="overview" role="tabpanel" aria-labelledby="tab-o">
+    <nav class="toc" id="toc" aria-label="Sekcie profilu"></nav>
+    <div id="sections"></div>
+  </div>
+  <section id="timeline-panel" role="tabpanel" aria-labelledby="tab-t" hidden>
+    <ol class="timeline" id="timeline"></ol>
+  </section>
+</div>
+
+<script src="geo.js"></script>
+<script src="sample.js"></script>
+<script src="chrome.js"></script>
+<script src="search.js"></script>
+<script src="map.js"></script>
+<script>
+(function () {
+  const S = KVSAMPLE, $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const fmt = (n) => n.toLocaleString("sk-SK");
+  const src = (code) => '<a class="src" href="' + S.SRC[code].url + '" target="_blank" rel="noopener">' + S.SRC[code].code + " ↗</a>";
+  // short stand-in for the stored snapshot hash, stable per source and person
+  const hash = (str) => { let h = 2166136261; for (const c of str) h = Math.imul(h ^ c.charCodeAt(0), 16777619); return (h >>> 0).toString(16).padStart(8, "0"); };
+
+  const map = KVMap($("map"), { mode: "borders", pad: 0.06, glow: true, font: "'Geist Mono', ui-monospace, monospace", labelFont: "Geist, system-ui, sans-serif" });
+  let lang = "sk", P = null;
+
+  function matchLine(m) {
+    return '<p class="match"><span>Zhoda:</span>' + m.map(([k, ok, v]) =>
+      '<span class="m ' + (ok === true ? "yes" : ok === false ? "no" : "na") + '">' + k + (v ? " · " + esc(v) : "") + "</span>").join("") + "</p>";
+  }
+
+  function render() {
+    P = S.people.find((p) => p.slug === location.hash.slice(1)) || S.people[0];
+    document.title = P.name + " · Koho volím";
+    document.querySelectorAll(".examples a").forEach((a) => a.toggleAttribute("aria-current", a.getAttribute("href") === "#" + P.slug));
+    $("crumb-race").textContent = P.candidacies[0].race;
+    $("crumb-name").textContent = P.name;
+    $("titles").textContent = P.titlesBefore || "";
+    $("name").innerHTML = esc(P.name) + (P.titlesAfter ? ' <span class="after">' + esc(P.titlesAfter) + "</span>" : "");
+    $("meta").innerHTML = "<span><b>" + P.age + " rokov</b></span><span>bydlisko <b>" + esc(P.residence) + "</b> (okres " + esc(P.okres) + ")</span><span>" + esc(P.occupation) + "</span>";
+    $("res").textContent = P.residence;
+    $("cands").innerHTML = P.candidacies.map((c) =>
+      '<a class="cand glass" href="kandidati.html#' + c.raceId + '"><span class="no">' + c.ballot + '<small>č.</small></span><span><b>' + esc(c.race) + '</b><span class="sub">' + esc(c.where) + " · " + esc(c.party) + "</span></span></a>").join("");
+    const ob = KV.OBCE.find((o) => o.label === P.residence);
+    if (ob) setTimeout(() => document.dispatchEvent(new CustomEvent("kv:focus", { detail: ob })), 50);
+
+    // footnote numbers follow first use in the summary
+    const order = [];
+    for (const l of Object.values(P.summary)) for (const [, refs] of l) for (const r of refs) if (!order.includes(r)) order.push(r);
+    const fnum = (id) => order.indexOf(id) + 1;
+    const sums = P.summary[lang] || P.summary.sk;
+
+    const sec = [];
+    const toc = [];
+    function add(id, title, count, html, soon) {
+      toc.push('<a href="#' + id + '"' + (soon ? ' class="soon"' : "") + ">" + title + (count != null ? "<em>" + count + "</em>" : "") + "</a>");
+      sec.push('<section class="sec" id="' + id + '"><h2><span class="n">' + String(toc.length).padStart(2, "0") + "</span>" + title + "</h2>" + html + "</section>");
+    }
+
+    add("zhrnutie", "Zhrnutie", null,
+      '<div class="summary glass"><div class="head"><span class="eyebrow">Zhrnutie vygenerované AI z faktov nižšie</span><div class="lang" role="group" aria-label="Jazyk zhrnutia">' +
+      ["sk", "hu", "en"].map((l) => '<button type="button" data-lang="' + l + '" aria-pressed="' + (l === lang) + '"' + (P.summary[l] ? "" : " disabled title=\"V ukážke nie je k dispozícii\"") + ">" + l.toUpperCase() + "</button>").join("") +
+      '</div></div><p class="text">' + sums.map(([t, refs]) => esc(t) + (refs.length ? "<sup>" + refs.map((r) => '<a href="#f-' + r + '" data-ref="' + r + '">' + fnum(r) + "</a>").join("") + "</sup>" : "")).join(" ") +
+      '</p><p class="note">Zhrnutie vzniká len z faktov na tejto stránke a neobsahuje hodnotenie. Číslo pri vete vedie na fakt, z ktorého veta vychádza.</p></div>');
+
+    const fn = (id) => (order.includes(id) ? '<span class="fn">' + fnum(id) + "</span>" : "");
+    add("kandidatury", "Kandidatúry 2026", P.candidacies.length, P.candidacies.map((c) =>
+      '<article class="fact" id="f-' + c.id + '">' + fn(c.id) + '<div class="row"><span class="what"><b>' + esc(c.race) + "</b> · " + esc(c.where) + '</span><span class="when">č. ' + c.ballot + " na lístku</span>" + src(c.src) +
+      '</div><p class="factnote">' + esc(c.party) + " · povolanie na listine: " + esc(c.occupation) + "</p></article>").join(""));
+
+    add("historia", "Volebná história 2010 – 2022", P.history.length, P.history.length
+      ? '<div class="tablewrap"><table class="hist"><thead><tr><th>Rok</th><th>Voľba</th><th>Strana · povolanie vtedy</th><th>Výsledok</th><th>Hlasy</th><th>Zhoda</th><th>Zdroj</th></tr></thead><tbody>' +
+        P.history.map((h) => '<tr id="f-' + h.id + '"><td class="y">' + h.year + "</td><td>" + esc(h.race) + "<small>" + esc(h.election) + "</small></td><td>" + esc(h.party) + "<small>" + esc(h.occupation) + '</small></td><td class="res ' + (h.elected ? "yes" : "no") + '">' + (h.elected ? "zvolený" : "nezvolený") + '</td><td class="mono">' + fmt(h.votes) + '</td><td class="reason' + (h.ambiguous ? " amb" : "") + '">' + esc(h.reason) + "</td><td>" + src(h.src) + "</td></tr>").join("") +
+        "</tbody></table></div>"
+      : '<div class="empty">' + esc(P.notFound.history) + "</div>");
+
+    add("firmy", "Firmy a funkcie", P.business.length, (P.business.length ? P.business.map((b) =>
+      '<article class="fact" id="f-' + b.id + '">' + fn(b.id) + '<div class="row"><span class="what"><b>' + esc(b.role) + "</b>, " + esc(b.org) + ' <span class="ico">IČO ' + b.ico + '</span></span><span class="when">' + b.from + " – " + (b.to || "dodnes") + "</span>" + src(b.src) + "</div>" +
+      matchLine(b.match) + (b.note ? '<p class="factnote">' + esc(b.note) + "</p>" : "") +
+      (b.dispute ? '<div class="dispute"><span class="tag">' + esc(b.dispute.status) + "</span><ol>" + b.dispute.thread.map((m) => "<li><b>" + esc(m.who) + "</b><time>" + esc(m.date) + "</time><p>" + esc(m.text) + "</p></li>").join("") +
+        '</ol><p class="rule">Námietka údaj neskrýva. Údaj sa mení, len keď zdroj preukáže chybu. <a href="opravy.html">Ako riešime opravy</a></p></div>' : "") +
+      "</article>").join("") : "") +
+      (P.notFound.business ? '<div class="empty">' + esc(P.notFound.business) + "</div>" : "") +
+      (P.notFound.unavailable ? '<div class="empty down">' + esc(P.notFound.unavailable) + "</div>" : ""));
+
+    add("pripravujeme", "Hlasovania, výroky, médiá", null, '<div class="soonlist">' +
+      [["Hlasovania a výroky v zastupiteľstve", "V príprave"], ["Sociálne siete", "V príprave"], ["Médiá", "V príprave"]].map(([a, b]) => "<div><span>" + a + "</span><span>" + b + " · <a href=\"metodika.html#nepokryvame\">prečo</a></span></div>").join("") + "</div>", true);
+
+    const [given, ...rest] = P.name.split(" "), family = rest.join(" ");
+    const q = encodeURIComponent('"' + P.name + '" ' + P.residence);
+    const links = [
+      ["Obchodný register", "osoby s týmto menom", "https://www.orsr.sk/hladaj_osoba.asp?PR=" + encodeURIComponent(family) + "&MENO=" + encodeURIComponent(given) + "&SID=0&T=f0&R=on"],
+      ["Register partnerov", "rpvs.gov.sk", "https://rpvs.gov.sk/"],
+      ["Centrálny register zmlúv", "crz.gov.sk", "https://www.crz.gov.sk/"],
+      ["Finstat", "finstat.sk", "https://finstat.sk/"],
+      ["Google Správy", "meno + obec", "https://news.google.com/search?q=" + q + "&hl=sk"],
+      ["Facebook", "meno + obec", "https://www.facebook.com/search/top?q=" + q],
+    ];
+    add("vyskum", "Ďalší výskum", null, '<div class="research">' + links.map(([a, b, u]) => '<a href="' + u + '" target="_blank" rel="noopener"><span>' + a + "<small>" + b + '</small></span><span aria-hidden="true">↗</span></a>').join("") +
+      "</div><p>Odkazy otvárajú vyhľadávanie na iných stránkach. Ich výsledky nekontrolujeme a do profilu nepreberáme.</p>");
+
+    const used = [...new Set([...P.candidacies, ...P.history, ...P.business].map((f) => f.src))];
+    if (P.notFound.unavailable && !used.includes("rpvs")) used.push("rpvs");
+    if (P.notFound.business && !used.includes("orsr")) used.push("orsr");
+    if (P.notFound.history && !used.includes("su")) used.push("su");
+    add("zdroje", "Zdroje", used.length, '<ol class="sources">' + used.map((k) => {
+      const s = S.SRC[k];
+      return "<li><span><b>" + esc(s.name) + '</b><small><a href="' + s.url + '" target="_blank" rel="noopener">' + esc(s.url) + "</a> · uložená kópia sha256 " + hash(k + P.slug) + "…</small></span><span class=\"d\">" + s.date + "</span></li>";
+    }).join("") + "</ol>");
+
+    $("toc").innerHTML = toc.join("");
+    $("sections").innerHTML = sec.join("");
+
+    // timeline: same facts, oldest first
+    const items = [
+      ...P.history.map((h) => ({ y: h.year, lab: "Volebná história", t: "<b>" + esc(h.race) + "</b> · " + (h.elected ? "zvolený" : "nezvolený") + ", " + fmt(h.votes) + " hlasov", s: h.src })),
+      ...P.business.map((b) => ({ y: +b.from, lab: "Firmy a funkcie", t: "<b>" + esc(b.role) + "</b>, " + esc(b.org) + " · " + b.from + " – " + (b.to || "dodnes"), s: b.src })),
+      ...P.business.filter((b) => b.to).map((b) => ({ y: +b.to, lab: "Firmy a funkcie", t: "Koniec funkcie: <b>" + esc(b.role) + "</b>, " + esc(b.org), s: b.src })),
+      ...P.candidacies.map((c) => ({ y: 2026, lab: "Kandidatúra 2026", t: "<b>" + esc(c.race) + "</b> · č. " + c.ballot + " na lístku, " + esc(c.party), s: c.src, now: true })),
+    ].sort((a, b) => a.y - b.y);
+    $("timeline").innerHTML = items.map((i) => '<li' + (i.now ? ' class="now"' : "") + '><span class="y">' + i.y + '</span><span class="lab">' + i.lab + "</span><p><span>" + i.t + "</span>" + src(i.s) + "</p></li>").join("") +
+      (P.history.length ? "" : '<li><span class="y">2010 – 2022</span><span class="lab">Volebná história</span><p><span class="muted">Nenájdené</span></p></li>');
+  }
+
+  // footnote → scroll to the fact and flash it
+  document.addEventListener("click", (e) => {
+    // the URL hash names the person, so section links scroll instead of changing it
+    const t = e.target.closest(".toc a, .soonlist a[href^='#']");
+    if (t) { e.preventDefault(); const el = $(t.getAttribute("href").slice(1)); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); return; }
+    const a = e.target.closest("[data-ref]");
+    if (a) {
+      e.preventDefault();
+      const el = $("f-" + a.dataset.ref);
+      if (!el) return;
+      showTab("o");
+      el.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
+      el.classList.add("flash"); setTimeout(() => el.classList.remove("flash"), 1800);
+      return;
+    }
+    const l = e.target.closest("[data-lang]");
+    if (l && !l.disabled) { lang = l.dataset.lang; render(); }
+  });
+
+  function showTab(t) {
+    $("tab-o").setAttribute("aria-selected", String(t === "o"));
+    $("tab-t").setAttribute("aria-selected", String(t === "t"));
+    $("overview").hidden = t !== "o";
+    $("timeline-panel").hidden = t !== "t";
+  }
+  $("tab-o").addEventListener("click", () => showTab("o"));
+  $("tab-t").addEventListener("click", () => showTab("t"));
+  addEventListener("hashchange", () => { lang = "sk"; render(); scrollTo({ top: 0 }); });
+  render();
+})();
+</script>
+</body>
+</html>

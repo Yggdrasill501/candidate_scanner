@@ -3,3 +3,7 @@ pnpm-lock.yaml
 .turbo
 next-env.d.ts
 packages/db/src/schema.ts
+
+# Generated map geometry (designs/homepage/tools/build-geo.mjs)
+apps/web/public/geo
+designs
