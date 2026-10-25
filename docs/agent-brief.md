@@ -14,7 +14,7 @@ the spec for your area if there is one (`specs/council-votes`, `specs/session-tr
 - Every fetched file goes through `fetchSnapshot(code, url)` (GET) or `storeSnapshot(code, url, bytes, status, contentType)`
   (POST/session responses) from `../lib/snapshot`. Facts must point at the snapshot that holds them.
 - Facts go into the `fact` table: `person_id, type, payload (jsonb), occurred_from, occurred_to, source_id,
-  source_url, snapshot_id, method ('register'|'scrape'|'transcript'|'ai'), match_reason (jsonb)`.
+source_url, snapshot_id, method ('register'|'scrape'|'transcript'|'ai'), match_reason (jsonb)`.
   A stage is idempotent: in one transaction delete its own facts (`type` + `source_id`) and insert the new set.
 - Helpers: `lib/names` (normalise, normalisedName, slugify, stripTitles, text), `lib/files` (xlsxRows, zipEntry,
   csvRecords), `lib/pdf` (pdfText), `lib/pool` (mapPool), `lib/claude` (headless Claude Code with JSON schema;
@@ -39,7 +39,7 @@ the spec for your area if there is one (`specs/council-votes`, `specs/session-tr
   (`OSO2026`/`VUC2026` are this election; `OSO2022`/`OSO2018`/`VUC2022` are history). A person's places are
   the municipalities of their 2026 races and their residence (`candidacy.residence_municipality`).
 - Every fact linked by name stores `match_reason`: `{ matched: [...], mismatched?: [...], unavailable?: [...],
-  namesakes: n, ambiguous?: n }`. Name alone is not enough for nationwide registers: require a second signal
+namesakes: n, ambiguous?: n }`. Name alone is not enough for nationwide registers: require a second signal
   (municipality, age/birth date, body membership, IČO already linked to the person). If several candidates fit
   equally, link to each and set `ambiguous`.
 - Store what the source says, verbatim where possible. No evaluation, no ranking, no adjectives.

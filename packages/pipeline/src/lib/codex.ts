@@ -9,7 +9,11 @@ import { join } from "node:path";
  * (ChatGPT) login; no API key is involved. The schema must be strict (every object closed, every
  * property required).
  */
-export async function codex<T>(system: string, prompt: string, schema: object): Promise<T> {
+export async function codex<T>(
+  system: string,
+  prompt: string,
+  schema: object,
+): Promise<T> {
   const dir = await mkdtemp(join(tmpdir(), "koho-codex-"));
   try {
     const schemaFile = join(dir, "schema.json");
@@ -32,11 +36,18 @@ export async function codex<T>(system: string, prompt: string, schema: object): 
       "-",
     ];
     await new Promise<void>((resolve, reject) => {
-      const child = spawn("codex", args, { cwd: dir, stdio: ["pipe", "ignore", "pipe"] });
+      const child = spawn("codex", args, {
+        cwd: dir,
+        stdio: ["pipe", "ignore", "pipe"],
+      });
       let err = "";
       child.stderr.on("data", (d) => (err = (err + d).slice(-2000)));
       child.on("error", reject);
-      child.on("close", (code) => (code === 0 ? resolve() : reject(new Error(`codex exited ${code}: ${err.slice(-500)}`))));
+      child.on("close", (code) =>
+        code === 0
+          ? resolve()
+          : reject(new Error(`codex exited ${code}: ${err.slice(-500)}`)),
+      );
       child.stdin.end(`${system}\n\n${prompt}`);
     });
     return JSON.parse(await readFile(outFile, "utf-8")) as T;

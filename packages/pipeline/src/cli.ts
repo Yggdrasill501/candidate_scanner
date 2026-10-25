@@ -40,9 +40,13 @@ const STAGES = {
 async function load(name: string): Promise<(runId: string) => Promise<Stats>> {
   const known = STAGES[name as keyof typeof STAGES];
   if (known) return known;
-  if (!/^[a-z0-9-]+$/.test(name)) throw new Error(`invalid stage name "${name}"`);
-  const mod = (await import(`./stages/${name}.ts`)) as { run?: () => Promise<Stats> };
-  if (!mod.run) throw new Error(`stage file stages/${name}.ts has no exported run()`);
+  if (!/^[a-z0-9-]+$/.test(name))
+    throw new Error(`invalid stage name "${name}"`);
+  const mod = (await import(`./stages/${name}.ts`)) as {
+    run?: () => Promise<Stats>;
+  };
+  if (!mod.run)
+    throw new Error(`stage file stages/${name}.ts has no exported run()`);
   return mod.run;
 }
 

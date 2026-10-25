@@ -81,7 +81,10 @@ export type SourceCode = keyof typeof SOURCES | (string & {});
 
 function meta(code: string): SourceMeta {
   const s = (SOURCES as Record<string, SourceMeta>)[code] ?? extra.get(code);
-  if (!s) throw new Error(`unknown source "${code}": declare it with registerSource()`);
+  if (!s)
+    throw new Error(
+      `unknown source "${code}": declare it with registerSource()`,
+    );
   return s;
 }
 

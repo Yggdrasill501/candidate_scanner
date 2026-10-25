@@ -28,7 +28,8 @@ interface Trader {
 
 /** "Ing. Ján Novák - STOLÁRSTVO" -> "Ján Novák": the person's name in a sole trader's business name. */
 function personName(businessName: string): string {
-  const head = businessName.split(/\s+[-–—]\s+|,\s*(?=[^,]*$)/)[0] ?? businessName;
+  const head =
+    businessName.split(/\s+[-–—]\s+|,\s*(?=[^,]*$)/)[0] ?? businessName;
   return stripTitles(head);
 }
 
@@ -40,10 +41,19 @@ function personName(businessName: string): string {
 export async function run(): Promise<Stats> {
   const source = await sourceId(SOURCE);
   const url = process.env.EKOSYSTEM_URL;
-  if (!url) throw new Error("EKOSYSTEM_URL is not set (database with the rpo2 dump)");
-  const snapshot = await registerLocalFile(SOURCE, DUMP_URL, join(DATA_DIR, "dumps", "rpo2.sql.gz"), "application/gzip");
+  if (!url)
+    throw new Error("EKOSYSTEM_URL is not set (database with the rpo2 dump)");
+  const snapshot = await registerLocalFile(
+    SOURCE,
+    DUMP_URL,
+    join(DATA_DIR, "dumps", "rpo2.sql.gz"),
+    "application/gzip",
+  );
 
-  const municipalities = await db.selectFrom("municipality").select("code").execute();
+  const municipalities = await db
+    .selectFrom("municipality")
+    .select("code")
+    .execute();
   const codes = municipalities.map((m) => m.code);
 
   const eko = createDatabase(url);
@@ -78,14 +88,27 @@ export async function run(): Promise<Stats> {
     .innerJoin("candidacy", "candidacy.person_id", "person.id")
     .innerJoin("race", "race.id", "candidacy.race_id")
     .leftJoin("municipality as m", "m.code", "race.municipality_code")
-    .leftJoin("municipality as r", (j) => j.on(sql`lower(r.name)`, "=", sql`lower(candidacy.residence_municipality)`))
-    .select(["person.id", "person.normalised_name", sql<string | null>`coalesce(m.code, r.code)`.as("place")])
+    .leftJoin("municipality as r", (j) =>
+      j.on(
+        sql`lower(r.name)`,
+        "=",
+        sql`lower(candidacy.residence_municipality)`,
+      ),
+    )
+    .select([
+      "person.id",
+      "person.normalised_name",
+      sql<string | null>`coalesce(m.code, r.code)`.as("place"),
+    ])
     .where("race.election_code", "in", ["OSO2026", "VUC2026"])
     .execute();
   const byNamePlace = new Map<string, Set<string>>();
   const namesakes = new Map<string, Set<string>>();
   for (const p of persons) {
-    namesakes.set(p.normalised_name, (namesakes.get(p.normalised_name) ?? new Set()).add(p.id));
+    namesakes.set(
+      p.normalised_name,
+      (namesakes.get(p.normalised_name) ?? new Set()).add(p.id),
+    );
     if (!p.place) continue;
     const key = `${p.normalised_name}|${p.place}`;
     byNamePlace.set(key, (byNamePlace.get(key) ?? new Set()).add(p.id));
@@ -94,13 +117,19 @@ export async function run(): Promise<Stats> {
   const rows: { person_id: string; t: Trader; ambiguous: number }[] = [];
   for (const t of traders) {
     if (!t.name || !t.municipality_code) continue;
-    const ids = byNamePlace.get(`${normalise(personName(t.name))}|${t.municipality_code}`);
+    const ids = byNamePlace.get(
+      `${normalise(personName(t.name))}|${t.municipality_code}`,
+    );
     if (!ids) continue;
     for (const id of ids) rows.push({ person_id: id, t, ambiguous: ids.size });
   }
 
   await db.transaction().execute(async (trx) => {
-    await trx.deleteFrom("fact").where("type", "=", "business_role").where("source_id", "=", source).execute();
+    await trx
+      .deleteFrom("fact")
+      .where("type", "=", "business_role")
+      .where("source_id", "=", source)
+      .execute();
     for (let i = 0; i < rows.length; i += 500) {
       await trx
         .insertInto("fact")
@@ -128,10 +157,15 @@ export async function run(): Promise<Stats> {
             match_reason: jsonb({
               matched: ["name", "municipality"],
               unavailable: ["age"],
-              namesakes: namesakes.get(personName(t.name) ? normalise(personName(t.name)) : "")?.size ?? 1,
+              namesakes:
+                namesakes.get(
+                  personName(t.name) ? normalise(personName(t.name)) : "",
+                )?.size ?? 1,
               ...(ambiguous > 1 ? { ambiguous } : {}),
               // "junior"/"ml." etc. in the business name may denote a different family member.
-              ...(/\b(junior|senior|ml\.|st\.|jr\.|sr\.|ifj\.|id\.)/i.test(t.name)
+              ...(/\b(junior|senior|ml\.|st\.|jr\.|sr\.|ifj\.|id\.)/i.test(
+                t.name,
+              )
                 ? { name_suffix: true, ambiguous: Math.max(ambiguous, 2) }
                 : {}),
             }),

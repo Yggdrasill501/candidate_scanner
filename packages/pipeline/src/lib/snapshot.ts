@@ -14,13 +14,14 @@ export interface Snapshot {
   bytes: Buffer;
 }
 
-const USER_AGENT =
-  "KohoVolim/0.1 (neutral candidate profiles)";
+const USER_AGENT = "KohoVolim/0.1 (neutral candidate profiles)";
 
 /** Wikimedia asks automated clients for a contact; it is sent to Wikimedia and nowhere else. */
 function userAgent(code: SourceCode): string {
   const contact = process.env.WIKIMEDIA_CONTACT;
-  return code === "wikipedia" && contact ? `${USER_AGENT.replace(/\)$/, "")}; ${contact})` : USER_AGENT;
+  return code === "wikipedia" && contact
+    ? `${USER_AGENT.replace(/\)$/, "")}; ${contact})`
+    : USER_AGENT;
 }
 
 /**
@@ -81,7 +82,9 @@ export async function fetchSnapshot(
   let lastError: unknown;
   for (let attempt = 1; attempt <= 5; attempt++) {
     try {
-      const res = await fetch(url, { headers: { "user-agent": userAgent(code) } });
+      const res = await fetch(url, {
+        headers: { "user-agent": userAgent(code) },
+      });
       if (res.status === 429) {
         const wait = Number(res.headers.get("retry-after")) || 60;
         await new Promise((r) => setTimeout(r, wait * 1000));

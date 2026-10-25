@@ -64,7 +64,9 @@ interface Ref {
 }
 
 type Sentence = { text: string; refs: string[] };
-type SummaryOutput = { people: ({ person: string } & Record<Lang, Sentence[]>)[] };
+type SummaryOutput = {
+  people: ({ person: string } & Record<Lang, Sentence[]>)[];
+};
 
 export interface PersonInput {
   personId: string;
@@ -93,12 +95,19 @@ function match(reason: Record<string, unknown> | null): string {
 }
 
 export async function inputs(): Promise<PersonInput[]> {
-  const people = await db.selectFrom("person").select(["id", "given_name", "family_name", "age_2026"]).execute();
+  const people = await db
+    .selectFrom("person")
+    .select(["id", "given_name", "family_name", "age_2026"])
+    .execute();
   const candidacies = await db
     .selectFrom("candidacy")
     .innerJoin("race", "race.id", "candidacy.race_id")
     .leftJoin("municipality", "municipality.code", "race.municipality_code")
-    .leftJoin("electoral_district", "electoral_district.id", "race.electoral_district_id")
+    .leftJoin(
+      "electoral_district",
+      "electoral_district.id",
+      "race.electoral_district_id",
+    )
     .select([
       "candidacy.id",
       "candidacy.person_id",
@@ -114,21 +123,38 @@ export async function inputs(): Promise<PersonInput[]> {
     .execute();
   const facts = await db
     .selectFrom("fact")
-    .select(["id", "person_id", "type", "payload", "occurred_from", "occurred_to", "match_reason"])
+    .select([
+      "id",
+      "person_id",
+      "type",
+      "payload",
+      "occurred_from",
+      "occurred_to",
+      "match_reason",
+    ])
     .where("type", "not in", ["council_vote", "watchdog_evaluation"])
     .execute();
 
   const byPerson = new Map<string, typeof facts>();
-  for (const f of facts) byPerson.set(f.person_id, [...(byPerson.get(f.person_id) ?? []), f]);
+  for (const f of facts)
+    byPerson.set(f.person_id, [...(byPerson.get(f.person_id) ?? []), f]);
   const candByPerson = new Map<string, typeof candidacies>();
   for (const c of candidacies) {
-    if (c.person_id) candByPerson.set(c.person_id, [...(candByPerson.get(c.person_id) ?? []), c]);
+    if (c.person_id)
+      candByPerson.set(c.person_id, [
+        ...(candByPerson.get(c.person_id) ?? []),
+        c,
+      ]);
   }
 
   return people.map((p) => {
     const refs: Ref[] = [];
     let n = 0;
-    const add = (data: Record<string, unknown>, factIds: string[] = [], candIds: string[] = []) =>
+    const add = (
+      data: Record<string, unknown>,
+      factIds: string[] = [],
+      candIds: string[] = [],
+    ) =>
       refs.push({ id: `r${++n}`, facts: factIds, candidacies: candIds, data });
 
     for (const c of candByPerson.get(p.id) ?? []) {
@@ -140,17 +166,25 @@ export async function inputs(): Promise<PersonInput[]> {
           district: c.district,
           party: c.party_label,
           occupation: c.occupation,
-          titles: [c.titles_before, c.titles_after].filter(Boolean).join(", ") || null,
+          titles:
+            [c.titles_before, c.titles_after].filter(Boolean).join(", ") ||
+            null,
         },
         [],
         [c.id],
       );
     }
     const fs = byPerson.get(p.id) ?? [];
-    const pay = (f: (typeof fs)[number]) => f.payload as Record<string, unknown>;
-    const reason = (f: (typeof fs)[number]) => f.match_reason as Record<string, unknown>;
+    const pay = (f: (typeof fs)[number]) =>
+      f.payload as Record<string, unknown>;
+    const reason = (f: (typeof fs)[number]) =>
+      f.match_reason as Record<string, unknown>;
 
-    for (const f of fs.filter((f) => f.type === "past_candidacy").sort((a, b) => isoDate(a.occurred_from).localeCompare(isoDate(b.occurred_from)))) {
+    for (const f of fs
+      .filter((f) => f.type === "past_candidacy")
+      .sort((a, b) =>
+        isoDate(a.occurred_from).localeCompare(isoDate(b.occurred_from)),
+      )) {
       const d = pay(f);
       add(
         {
@@ -169,13 +203,17 @@ export async function inputs(): Promise<PersonInput[]> {
 
     const roles = fs.filter((f) => f.type === "business_role");
     if (roles.length > 0) {
-      const current = roles.filter((f) => !f.occurred_to && !pay(f).organisation_terminated);
+      const current = roles.filter(
+        (f) => !f.occurred_to && !pay(f).organisation_terminated,
+      );
       add(
         {
           kind: "business_roles_overview",
           total_roles: roles.length,
           current_roles: current.length,
-          organisations: new Set(roles.map((f) => pay(f).ico ?? pay(f).organisation)).size,
+          organisations: new Set(
+            roles.map((f) => pay(f).ico ?? pay(f).organisation),
+          ).size,
           any_ambiguous: roles.some((f) => match(reason(f)) !== "confirmed"),
         },
         roles.slice(0, 50).map((f) => f.id),
@@ -189,7 +227,10 @@ export async function inputs(): Promise<PersonInput[]> {
             role: d.role_label ?? ROLE_LABEL[String(d.role)] ?? d.role,
             since: f.occurred_from,
             ...(d.role === "beneficial_owner" && d.public_official
-              ? { rpvs_note: "registered in RPVS as beneficial owner due to a management position in a public company; not ownership" }
+              ? {
+                  rpvs_note:
+                    "registered in RPVS as beneficial owner due to a management position in a public company; not ownership",
+                }
               : {}),
             match: match(reason(f)),
           },
@@ -199,7 +240,15 @@ export async function inputs(): Promise<PersonInput[]> {
     }
     for (const f of fs.filter((f) => f.type === "ngo_role").slice(0, 5)) {
       const d = pay(f);
-      add({ kind: "ngo_role", organisation: d.organisation, role: d.function ?? d.role, since: f.occurred_from }, [f.id]);
+      add(
+        {
+          kind: "ngo_role",
+          organisation: d.organisation,
+          role: d.function ?? d.role,
+          since: f.occurred_from,
+        },
+        [f.id],
+      );
     }
     const declarations = fs
       .filter((f) => f.type === "asset_declaration" && pay(f).year)
@@ -234,30 +283,75 @@ export async function inputs(): Promise<PersonInput[]> {
     const checks = fs.filter((f) => f.type === "fact_check");
     if (checks.length) {
       const ratings: Record<string, number> = {};
-      for (const f of checks) ratings[String(pay(f).rating)] = (ratings[String(pay(f).rating)] ?? 0) + 1;
-      add({ kind: "demagog_fact_checks", count: checks.length, ratings, match: match(reason(checks[0]!)) }, checks.map((f) => f.id));
+      for (const f of checks)
+        ratings[String(pay(f).rating)] =
+          (ratings[String(pay(f).rating)] ?? 0) + 1;
+      add(
+        {
+          kind: "demagog_fact_checks",
+          count: checks.length,
+          ratings,
+          match: match(reason(checks[0]!)),
+        },
+        checks.map((f) => f.id),
+      );
     }
     const media = fs.filter((f) => f.type === "media_mention");
     if (media.length) {
-      const dates = media.map((f) => isoDate(f.occurred_from)).filter(Boolean).sort();
+      const dates = media
+        .map((f) => isoDate(f.occurred_from))
+        .filter(Boolean)
+        .sort();
       add(
-        { kind: "media_mentions", count: media.length, from_year: dates[0]?.slice(0, 4), to_year: dates.at(-1)?.slice(0, 4) },
+        {
+          kind: "media_mentions",
+          count: media.length,
+          from_year: dates[0]?.slice(0, 4),
+          to_year: dates.at(-1)?.slice(0, 4),
+        },
         media.slice(0, 50).map((f) => f.id),
       );
     }
     for (const f of fs.filter((f) => f.type === "encyclopedia")) {
       const d = pay(f);
-      add({ kind: "wikipedia", lang: d.lang, intro: String(d.intro ?? "").slice(0, 600), positions: d.position_held, match: match(reason(f)) }, [f.id]);
+      add(
+        {
+          kind: "wikipedia",
+          lang: d.lang,
+          intro: String(d.intro ?? "").slice(0, 600),
+          positions: d.position_held,
+          match: match(reason(f)),
+        },
+        [f.id],
+      );
     }
     for (const f of fs.filter((f) => f.type === "campaign_account")) {
-      add({ kind: "campaign_transparent_account", published: Boolean(pay(f).transparent_account) }, [f.id]);
+      add(
+        {
+          kind: "campaign_transparent_account",
+          published: Boolean(pay(f).transparent_account),
+        },
+        [f.id],
+      );
     }
 
     const sparse = refs.every((r) => r.data.kind === "candidacy_2026");
     const hash = createHash("sha256")
-      .update(JSON.stringify({ v: SUMMARY_PROMPT_VERSION, refs: refs.map((r) => r.data) }))
+      .update(
+        JSON.stringify({
+          v: SUMMARY_PROMPT_VERSION,
+          refs: refs.map((r) => r.data),
+        }),
+      )
       .digest("hex");
-    return { personId: p.id, name: `${p.given_name} ${p.family_name}`, age: p.age_2026, refs, sparse, hash };
+    return {
+      personId: p.id,
+      name: `${p.given_name} ${p.family_name}`,
+      age: p.age_2026,
+      refs,
+      sparse,
+      hash,
+    };
   });
 }
 
@@ -266,10 +360,16 @@ export async function inputs(): Promise<PersonInput[]> {
  * Used for everyone when SUMMARY_MODE=template, for people with only their 2026 candidacy, and as
  * the fallback when an AI answer fails validation. No gendered grammar in any language.
  */
-function template(p: PersonInput): Record<Lang, { text: string; refs: string[] }[]> {
+function template(
+  p: PersonInput,
+): Record<Lang, { text: string; refs: string[] }[]> {
   const of = (kind: string) => p.refs.filter((r) => r.data.kind === kind);
   const ids = (rs: Ref[]) => rs.map((r) => r.id);
-  const out: Record<Lang, { text: string; refs: string[] }[]> = { sk: [], en: [], hu: [] };
+  const out: Record<Lang, { text: string; refs: string[] }[]> = {
+    sk: [],
+    en: [],
+    hu: [],
+  };
   const say = (refs: Ref[], sk: string, en: string, hu: string) => {
     if (refs.length === 0) return;
     out.sk.push({ text: sk, refs: ids(refs) });
@@ -279,14 +379,31 @@ function template(p: PersonInput): Record<Lang, { text: string; refs: string[] }
 
   const cands = of("candidacy_2026");
   const race = (r: Ref) =>
-    [r.data.race, r.data.municipality, r.data.district ? `obvod ${r.data.district}` : null].filter(Boolean).join(", ");
+    [
+      r.data.race,
+      r.data.municipality,
+      r.data.district ? `obvod ${r.data.district}` : null,
+    ]
+      .filter(Boolean)
+      .join(", ");
   const list = cands.map((r) => `${race(r)} (${r.data.party})`).join("; ");
-  say(cands, `${p.name} (${p.age}) – kandidatúra 2026: ${list}.`, `${p.name} (${p.age}) – 2026 candidacy: ${list}.`, `${p.name} (${p.age}) – 2026-os jelöltség: ${list}.`);
+  say(
+    cands,
+    `${p.name} (${p.age}) – kandidatúra 2026: ${list}.`,
+    `${p.name} (${p.age}) – 2026 candidacy: ${list}.`,
+    `${p.name} (${p.age}) – 2026-os jelöltség: ${list}.`,
+  );
 
   const past = of("past_candidacy");
   if (past.length) {
     const won = past.filter((r) => r.data.elected === true);
-    const years = [...new Set(won.map((r) => String(r.data.election).match(/\d{4}/)?.[0]).filter(Boolean))].join(", ");
+    const years = [
+      ...new Set(
+        won
+          .map((r) => String(r.data.election).match(/\d{4}/)?.[0])
+          .filter(Boolean),
+      ),
+    ].join(", ");
     say(
       past,
       `Predchádzajúce kandidatúry (2018–2022): ${past.length}, z toho zvolenie: ${won.length}${years ? ` (${years})` : ""}.`,
@@ -305,23 +422,48 @@ function template(p: PersonInput): Record<Lang, { text: string; refs: string[] }
     );
   }
   const ngos = of("ngo_role");
-  say(ngos, `Register mimovládnych organizácií: ${ngos.length} funkcií.`, `Register of non-governmental organisations: ${ngos.length} positions.`, `Civil szervezetek nyilvántartása: ${ngos.length} tisztség.`);
+  say(
+    ngos,
+    `Register mimovládnych organizácií: ${ngos.length} funkcií.`,
+    `Register of non-governmental organisations: ${ngos.length} positions.`,
+    `Civil szervezetek nyilvántartása: ${ngos.length} tisztség.`,
+  );
   const decl = of("asset_declaration")[0];
   if (decl) {
-    say([decl], `Oznámenie verejného funkcionára za rok ${decl.data.year} je k dispozícii.`, `A public official's declaration for ${decl.data.year} is available.`, `Közfunkcionáriusi nyilatkozat ${decl.data.year}-re/-ra elérhető.`);
+    say(
+      [decl],
+      `Oznámenie verejného funkcionára za rok ${decl.data.year} je k dispozícii.`,
+      `A public official's declaration for ${decl.data.year} is available.`,
+      `Közfunkcionáriusi nyilatkozat ${decl.data.year}-re/-ra elérhető.`,
+    );
   }
   for (const a of of("council_attendance")) {
     const d = a.data;
     const from = String(d.term_from).slice(0, 4);
-    say([a], `${d.body}, obdobie od ${from}: účasť na ${d.votes_present} z ${d.votes_total} hlasovaní.`, `${d.body}, term from ${from}: present at ${d.votes_present} of ${d.votes_total} votes.`, `${d.body}, ${from}-tól kezdődő ciklus: jelen ${d.votes_total} szavazásból ${d.votes_present} alkalommal.`);
+    say(
+      [a],
+      `${d.body}, obdobie od ${from}: účasť na ${d.votes_present} z ${d.votes_total} hlasovaní.`,
+      `${d.body}, term from ${from}: present at ${d.votes_present} of ${d.votes_total} votes.`,
+      `${d.body}, ${from}-tól kezdődő ciklus: jelen ${d.votes_total} szavazásból ${d.votes_present} alkalommal.`,
+    );
   }
   const media = of("media_mentions")[0];
   if (media) {
     const d = media.data;
-    say([media], `Mediálne zmienky: ${d.count} (${d.from_year}–${d.to_year}).`, `Media mentions: ${d.count} (${d.from_year}–${d.to_year}).`, `Médiaemlítések: ${d.count} (${d.from_year}–${d.to_year}).`);
+    say(
+      [media],
+      `Mediálne zmienky: ${d.count} (${d.from_year}–${d.to_year}).`,
+      `Media mentions: ${d.count} (${d.from_year}–${d.to_year}).`,
+      `Médiaemlítések: ${d.count} (${d.from_year}–${d.to_year}).`,
+    );
   }
   if (out.sk.length === 1) {
-    say(cands, "V spracovaných zdrojoch nie sú k dispozícii ďalšie záznamy.", "The processed sources contain no further records.", "A feldolgozott forrásokban nincs további adat.");
+    say(
+      cands,
+      "V spracovaných zdrojoch nie sú k dispozícii ďalšie záznamy.",
+      "The processed sources contain no further records.",
+      "A feldolgozott forrásokban nincs további adat.",
+    );
   }
   // Keep within the 5-sentence limit: candidacy first, then the most specific records.
   for (const l of LANGS) out[l] = out[l].slice(0, 5);
@@ -334,31 +476,55 @@ const EN_GENDERED = /(?<!\p{L})(he|she|his|her|him)(?!\p{L})/iu;
 const EVALUATIVE =
   /(?<!\p{L})(úspešn\p{L}*|významn\p{L}*|kontroverzn\p{L}*|bohat\p{L}*|rozsiahl\p{L}*|successful\p{L}*|notabl\p{L}*|prominent|controversial|extensive\p{L}*|impressive|sikeres\p{L}*|jelentős\p{L}*)(?!\p{L})/iu;
 // Remarks about the data itself instead of the record, and item ids pasted into the text.
-const META = /(?<!\p{L})(r\d+|nečitateľn\p{L}*|chýbaj\p{L}*|unreadable|missing|olvashatatlan\p{L}*|hiányz\p{L}*)(?!\p{L})/iu;
-const QUALIFIER: Record<Lang, RegExp> = { sk: /zhod\p{L}* men/iu, en: /name match/iu, hu: /névegyezés/iu };
+const META =
+  /(?<!\p{L})(r\d+|nečitateľn\p{L}*|chýbaj\p{L}*|unreadable|missing|olvashatatlan\p{L}*|hiányz\p{L}*)(?!\p{L})/iu;
+const QUALIFIER: Record<Lang, RegExp> = {
+  sk: /zhod\p{L}* men/iu,
+  en: /name match/iu,
+  hu: /névegyezés/iu,
+};
 
 /** Why an AI answer for one person cannot be stored; empty when it passes. */
-function problems(p: PersonInput, r: Record<Lang, Sentence[]> | undefined): string[] {
+function problems(
+  p: PersonInput,
+  r: Record<Lang, Sentence[]> | undefined,
+): string[] {
   if (!r) return ["missing"];
   const out: string[] = [];
   const byId = new Map(p.refs.map((x) => [x.id, x]));
   for (const l of LANGS) {
     const ss = r[l] ?? [];
-    if (ss.length < 1 || ss.length > 5) out.push(`${l}: ${ss.length} sentences`);
+    if (ss.length < 1 || ss.length > 5)
+      out.push(`${l}: ${ss.length} sentences`);
     for (const s of ss) {
-      if (!s.text.trim() || !s.refs.length || !s.refs.every((id) => byId.has(id))) out.push(`${l}: bad refs`);
+      if (
+        !s.text.trim() ||
+        !s.refs.length ||
+        !s.refs.every((id) => byId.has(id))
+      )
+        out.push(`${l}: bad refs`);
       // Every number must come from the cited items (or the name/age line).
-      const cited = JSON.stringify([p.name, p.age, ...s.refs.map((id) => byId.get(id)?.data)]);
-      for (const n of s.text.replace(/(\d) (\d{3})/g, "$1$2").match(/\d+/g) ?? []) if (!cited.includes(n)) out.push(`${l}: number ${n}`);
+      const cited = JSON.stringify([
+        p.name,
+        p.age,
+        ...s.refs.map((id) => byId.get(id)?.data),
+      ]);
+      for (const n of s.text.replace(/(\d) (\d{3})/g, "$1$2").match(/\d+/g) ??
+        [])
+        if (!cited.includes(n)) out.push(`${l}: number ${n}`);
       if (l === "sk" && SK_GENDERED.test(s.text)) out.push("sk: gendered");
       if (l === "en" && EN_GENDERED.test(s.text)) out.push("en: he/she");
       if (EVALUATIVE.test(s.text)) out.push(`${l}: evaluative`);
       if (META.test(s.text)) out.push(`${l}: meta`);
-      const weak = s.refs.some((id) => ["ambiguous", "name_only"].includes(String(byId.get(id)?.data.match)));
-      if (weak && !QUALIFIER[l].test(s.text)) out.push(`${l}: unqualified name match`);
+      const weak = s.refs.some((id) =>
+        ["ambiguous", "name_only"].includes(String(byId.get(id)?.data.match)),
+      );
+      if (weak && !QUALIFIER[l].test(s.text))
+        out.push(`${l}: unqualified name match`);
     }
   }
-  if (new Set(LANGS.map((l) => r[l]?.length)).size > 1) out.push("languages differ");
+  if (new Set(LANGS.map((l) => r[l]?.length)).size > 1)
+    out.push("languages differ");
   return out;
 }
 
@@ -373,33 +539,59 @@ function problems(p: PersonInput, r: Record<Lang, Sentence[]> | undefined): stri
 export async function summaries(): Promise<Stats> {
   const all = await inputs();
   const existing = new Map(
-    (await db.selectFrom("ai_summary").select(["person_id", "input_hash", "method"]).where("lang", "=", "sk").execute()).map(
-      (r) => [r.person_id, r],
-    ),
+    (
+      await db
+        .selectFrom("ai_summary")
+        .select(["person_id", "input_hash", "method"])
+        .where("lang", "=", "sk")
+        .execute()
+    ).map((r) => [r.person_id, r]),
   );
   const templateOnly = process.env.SUMMARY_MODE === "template";
   const only = process.env.PIPELINE_ONLY?.split(",");
   const upToDate = (p: PersonInput) => {
     const e = existing.get(p.personId);
-    return e?.input_hash === p.hash && (e.method === "ai" || p.sparse || templateOnly);
+    return (
+      e?.input_hash === p.hash &&
+      (e.method === "ai" || p.sparse || templateOnly)
+    );
   };
   const todo = all
     .filter((p) => !only || only.some((n) => p.name.endsWith(` ${n}`)))
     .filter((p) => !upToDate(p));
 
-  const store = async (p: PersonInput, method: "ai" | "template", model: string | null, out: Record<Lang, Sentence[]>) => {
+  const store = async (
+    p: PersonInput,
+    method: "ai" | "template",
+    model: string | null,
+    out: Record<Lang, Sentence[]>,
+  ) => {
     const byId = new Map(p.refs.map((r) => [r.id, r]));
     for (const lang of LANGS) {
       const sentences = out[lang].map((s) => ({
         text: s.text,
-        fact_ids: [...new Set(s.refs.flatMap((id) => byId.get(id)?.facts ?? []))],
-        candidacy_ids: [...new Set(s.refs.flatMap((id) => byId.get(id)?.candidacies ?? []))],
+        fact_ids: [
+          ...new Set(s.refs.flatMap((id) => byId.get(id)?.facts ?? [])),
+        ],
+        candidacy_ids: [
+          ...new Set(s.refs.flatMap((id) => byId.get(id)?.candidacies ?? [])),
+        ],
       }));
-      const row = { sentences: jsonb(sentences), method, model, prompt_version: SUMMARY_PROMPT_VERSION, input_hash: p.hash };
+      const row = {
+        sentences: jsonb(sentences),
+        method,
+        model,
+        prompt_version: SUMMARY_PROMPT_VERSION,
+        input_hash: p.hash,
+      };
       await db
         .insertInto("ai_summary")
         .values({ person_id: p.personId, lang, ...row })
-        .onConflict((oc) => oc.columns(["person_id", "lang"]).doUpdateSet({ ...row, generated_at: sql`now()` }))
+        .onConflict((oc) =>
+          oc
+            .columns(["person_id", "lang"])
+            .doUpdateSet({ ...row, generated_at: sql`now()` }),
+        )
         .execute();
     }
   };
@@ -407,18 +599,33 @@ export async function summaries(): Promise<Stats> {
   let templated = 0;
   for (const p of todo.filter((p) => p.sparse || templateOnly)) {
     // Keep an AI summary that is still current when only refreshing templates.
-    if (templateOnly && existing.get(p.personId)?.method === "ai" && existing.get(p.personId)?.input_hash === p.hash) continue;
+    if (
+      templateOnly &&
+      existing.get(p.personId)?.method === "ai" &&
+      existing.get(p.personId)?.input_hash === p.hash
+    )
+      continue;
     await store(p, "template", null, template(p));
     templated++;
   }
   const rich = templateOnly
     ? []
-    : todo.filter((p) => !p.sparse).slice(0, process.env.PIPELINE_LIMIT ? Number(process.env.PIPELINE_LIMIT) : undefined);
+    : todo
+        .filter((p) => !p.sparse)
+        .slice(
+          0,
+          process.env.PIPELINE_LIMIT
+            ? Number(process.env.PIPELINE_LIMIT)
+            : undefined,
+        );
 
   // Strict schema (closed objects, all required) works for both Codex and Claude.
   const sentence = {
     type: "object",
-    properties: { text: { type: "string" }, refs: { type: "array", items: { type: "string" } } },
+    properties: {
+      text: { type: "string" },
+      refs: { type: "array", items: { type: "string" } },
+    },
     required: ["text", "refs"],
     additionalProperties: false,
   };
@@ -430,7 +637,12 @@ export async function summaries(): Promise<Stats> {
         type: "array",
         items: {
           type: "object",
-          properties: { person: { type: "string" }, sk: block, en: block, hu: block },
+          properties: {
+            person: { type: "string" },
+            sk: block,
+            en: block,
+            hu: block,
+          },
           required: ["person", "sk", "en", "hu"],
           additionalProperties: false,
         },
@@ -442,15 +654,33 @@ export async function summaries(): Promise<Stats> {
 
   const engine = process.env.SUMMARY_ENGINE ?? "codex";
   const claudeModel = process.env.CLAUDE_MODEL ?? "sonnet";
-  const engineModel = engine === "codex" ? `codex:${process.env.CODEX_MODEL ?? "default"}` : claudeModel;
-  const ask = async (batch: PersonInput[], via: string): Promise<SummaryOutput | null> => {
+  const engineModel =
+    engine === "codex"
+      ? `codex:${process.env.CODEX_MODEL ?? "default"}`
+      : claudeModel;
+  const ask = async (
+    batch: PersonInput[],
+    via: string,
+  ): Promise<SummaryOutput | null> => {
     const prompt =
       "Write the summaries for these people. Each person's items have ids; cite them in refs only, never in the text.\n\n" +
       batch
-        .map((p, i) => JSON.stringify({ person: `p${i + 1}`, name: p.name, age: p.age, items: p.refs.map((r) => ({ id: r.id, ...r.data })) }))
+        .map((p, i) =>
+          JSON.stringify({
+            person: `p${i + 1}`,
+            name: p.name,
+            age: p.age,
+            items: p.refs.map((r) => ({ id: r.id, ...r.data })),
+          }),
+        )
         .join("\n");
     if (via === "codex") return codex<SummaryOutput>(SYSTEM, prompt, schema);
-    const res = await claude<SummaryOutput>(SYSTEM, prompt, schema, claudeModel);
+    const res = await claude<SummaryOutput>(
+      SYSTEM,
+      prompt,
+      schema,
+      claudeModel,
+    );
     cost += res.costUsd;
     return res.output;
   };
@@ -463,47 +693,58 @@ export async function summaries(): Promise<Stats> {
   const claudeMax = Number(process.env.SUMMARY_CLAUDE_MAX ?? 100);
   const failures: Record<string, number> = {};
   const batches: PersonInput[][] = [];
-  for (let i = 0; i < rich.length; i += BATCH) batches.push(rich.slice(i, i + BATCH));
+  for (let i = 0; i < rich.length; i += BATCH)
+    batches.push(rich.slice(i, i + BATCH));
 
-  await mapPool(batches, Number(process.env.SUMMARY_CONCURRENCY ?? 3), 0, async (batch, index) => {
-    if (failedInRow >= 4) return; // Engine is out of quota or down: stop, resume later.
-    let output: SummaryOutput | null = null;
-    try {
-      output = await ask(batch, engine);
-      failedInRow = 0;
-    } catch (error) {
-      failedInRow++;
-      console.error(`  batch ${index}: ${String(error).slice(0, 300)}`);
-    }
-    for (const [i, p] of batch.entries()) {
-      let r = output?.people.find((x) => x.person === `p${i + 1}`);
-      let issues = problems(p, r);
-      let model = engineModel;
-      if (issues.length && output) {
-        // Retry the person alone with the engine, then with Claude.
-        const single = await ask([p], engine).catch(() => null);
-        r = single?.people[0];
-        issues = problems(p, r);
-        if (issues.length && engine === "codex" && viaClaude < claudeMax) {
-          viaClaude++;
-          const viaC = await ask([p], "claude").catch(() => null);
-          r = viaC?.people[0];
+  await mapPool(
+    batches,
+    Number(process.env.SUMMARY_CONCURRENCY ?? 3),
+    0,
+    async (batch, index) => {
+      if (failedInRow >= 4) return; // Engine is out of quota or down: stop, resume later.
+      let output: SummaryOutput | null = null;
+      try {
+        output = await ask(batch, engine);
+        failedInRow = 0;
+      } catch (error) {
+        failedInRow++;
+        console.error(`  batch ${index}: ${String(error).slice(0, 300)}`);
+      }
+      for (const [i, p] of batch.entries()) {
+        let r = output?.people.find((x) => x.person === `p${i + 1}`);
+        let issues = problems(p, r);
+        let model = engineModel;
+        if (issues.length && output) {
+          // Retry the person alone with the engine, then with Claude.
+          const single = await ask([p], engine).catch(() => null);
+          r = single?.people[0];
           issues = problems(p, r);
-          model = claudeModel;
+          if (issues.length && engine === "codex" && viaClaude < claudeMax) {
+            viaClaude++;
+            const viaC = await ask([p], "claude").catch(() => null);
+            r = viaC?.people[0];
+            issues = problems(p, r);
+            model = claudeModel;
+          }
+        }
+        if (r && !issues.length) {
+          await store(p, "ai", model, { sk: r.sk, en: r.en, hu: r.hu });
+          ai++;
+        } else if (output) {
+          // Only an answered batch falls back to the template; an engine error leaves the person for the next run.
+          for (const x of issues)
+            failures[x.replace(/ \d+$/, "")] =
+              (failures[x.replace(/ \d+$/, "")] ?? 0) + 1;
+          await store(p, "template", null, template(p));
+          fallback++;
         }
       }
-      if (r && !issues.length) {
-        await store(p, "ai", model, { sk: r.sk, en: r.en, hu: r.hu });
-        ai++;
-      } else if (output) {
-        // Only an answered batch falls back to the template; an engine error leaves the person for the next run.
-        for (const x of issues) failures[x.replace(/ \d+$/, "")] = (failures[x.replace(/ \d+$/, "")] ?? 0) + 1;
-        await store(p, "template", null, template(p));
-        fallback++;
-      }
-    }
-    if ((index + 1) % 20 === 0) console.log(`  ${index + 1}/${batches.length} batches, ${ai} ai, ${fallback} template`);
-  });
+      if ((index + 1) % 20 === 0)
+        console.log(
+          `  ${index + 1}/${batches.length} batches, ${ai} ai, ${fallback} template`,
+        );
+    },
+  );
 
   return {
     persons: all.length,

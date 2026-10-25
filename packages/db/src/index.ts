@@ -1,5 +1,6 @@
 import { Kysely, PostgresDialect, sql } from "kysely";
 import type { RawBuilder } from "kysely";
+import { attachDatabasePool } from "@vercel/functions";
 import { Pool } from "pg";
 import type { DB } from "./schema";
 
@@ -45,7 +46,10 @@ function createDb() {
         if (!connectionString) {
           throw new Error("DATABASE_URL is not set");
         }
-        return new Pool({ connectionString });
+        const pool = new Pool({ connectionString });
+        // On Vercel (Fluid compute), close idle clients before an instance is suspended.
+        if (process.env.VERCEL) attachDatabasePool(pool);
+        return pool;
       },
     }),
   });

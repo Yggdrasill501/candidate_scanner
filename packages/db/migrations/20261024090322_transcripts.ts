@@ -3,7 +3,9 @@ import { type Kysely, sql } from "kysely";
 // YouTube channels, videos and transcripts (specs/session-transcripts); parliament as a body.
 export async function up(db: Kysely<unknown>): Promise<void> {
   await sql`ALTER TABLE body DROP CONSTRAINT body_kind_check`.execute(db);
-  await sql`ALTER TABLE body ADD CONSTRAINT body_kind_check CHECK (kind IN ('municipal', 'regional', 'national'))`.execute(db);
+  await sql`ALTER TABLE body ADD CONSTRAINT body_kind_check CHECK (kind IN ('municipal', 'regional', 'national'))`.execute(
+    db,
+  );
 
   await sql`
     CREATE TABLE yt_channel (
@@ -66,13 +68,23 @@ export async function up(db: Kysely<unknown>): Promise<void> {
       prompt_version text
     )
   `.execute(db);
-  await sql`CREATE INDEX speaker_turn_transcript ON speaker_turn (transcript_id)`.execute(db);
+  await sql`CREATE INDEX speaker_turn_transcript ON speaker_turn (transcript_id)`.execute(
+    db,
+  );
 }
 
 export async function down(db: Kysely<unknown>): Promise<void> {
-  for (const t of ["speaker_turn", "transcript_segment", "transcript", "yt_video", "yt_channel"]) {
+  for (const t of [
+    "speaker_turn",
+    "transcript_segment",
+    "transcript",
+    "yt_video",
+    "yt_channel",
+  ]) {
     await sql`DROP TABLE IF EXISTS ${sql.table(t)}`.execute(db);
   }
   await sql`ALTER TABLE body DROP CONSTRAINT body_kind_check`.execute(db);
-  await sql`ALTER TABLE body ADD CONSTRAINT body_kind_check CHECK (kind IN ('municipal', 'regional'))`.execute(db);
+  await sql`ALTER TABLE body ADD CONSTRAINT body_kind_check CHECK (kind IN ('municipal', 'regional'))`.execute(
+    db,
+  );
 }

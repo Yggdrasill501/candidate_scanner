@@ -16,3 +16,4 @@ npm-debug.log*
 
 # Raw source snapshots (immutable, content-addressed)
 data/
+.neon

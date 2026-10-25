@@ -26,6 +26,7 @@
     "pipeline": "pnpm --filter @repo/pipeline pipeline"
   },
   "devDependencies": {
+    "@neon/config": "^1.9.3",
     "eslint": "^9",
     "eslint-config-next": "16.4.3",
     "prettier": "^3.9.9",
