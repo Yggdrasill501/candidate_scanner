@@ -17,8 +17,7 @@ export function raceTitle(
   if (r.kind === "regional_governor")
     return { name: d.kind.regional_governor, where: d.wholeRegion };
   if (r.kind === "regional_council") {
-    const okres =
-      r.district != null ? okresForNskDistrict(r.district) : null;
+    const okres = r.district != null ? okresForNskDistrict(r.district) : null;
     return {
       name: okres
         ? `${t(lang).ballot.district} ${okres}`
