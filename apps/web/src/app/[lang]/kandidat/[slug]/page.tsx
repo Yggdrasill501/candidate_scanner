@@ -565,10 +565,8 @@ async function ProfilePage({
       <ol className="sources">
         {person.sources.map((s) => (
           <li key={s.code}>
-            <span>
-              <b>{s.name}</b>
-              <small>{s.baseUrl}</small>
-            </span>
+            <b>{s.name}</b>
+            <small>{s.baseUrl}</small>
             <span className="d">
               {d.profile.retrieved} {formatDate(s.lastRetrieved)}
             </span>

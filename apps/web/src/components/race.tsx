@@ -190,15 +190,28 @@ export function RaceTable({
 }
 
 /** A small card linking to a race, used on ballots, profiles and the candidate directory. */
-export function RaceCard({ lang, race }: { lang: Lang; race: RaceRef }) {
+export function RaceCard({
+  lang,
+  race,
+  /** When set, the district (or place) is the heading — avoids repeating the race kind. */
+  heading = "race",
+}: {
+  lang: Lang;
+  race: RaceRef;
+  heading?: "race" | "place";
+}) {
   const d = t(lang);
   const title = raceTitle(lang, race);
   const empty = race.candidates === 0;
+  const main = heading === "place" && title.where ? title.where : title.name;
+  const sub = heading === "place" ? null : title.where || null;
   const body = (
     <>
-      <span className="eyebrow">{d.race.kindShort[race.kind]}</span>
-      <h2>{title.name}</h2>
-      {title.where && <span className="where">{title.where}</span>}
+      {heading === "race" && (
+        <span className="eyebrow">{d.race.kindShort[race.kind]}</span>
+      )}
+      <h2>{main}</h2>
+      {sub && <span className="where">{sub}</span>}
       <span className="facts">
         <span>
           <b>{race.candidates}</b>{" "}

@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { PageFallback } from "@/components/fallback";
-import { RaceCard, RaceTable } from "@/components/race";
+import { RaceCard } from "@/components/race";
+import { ResultsStandings } from "@/components/results-standings";
 import { Shell } from "@/components/shell";
 import { getRace, getRegionalRaces } from "@/lib/data";
 import { t, type Lang } from "@/lib/i18n";
@@ -17,7 +18,10 @@ async function ResultsBody({ lang }: { lang: Lang }) {
   const d = t(lang);
   const regional = await getRegionalRaces();
   const governorRef = regional.find((r) => r.kind === "regional_governor");
-  const councils = regional.filter((r) => r.kind === "regional_council");
+  const councils = regional
+    .filter((r) => r.kind === "regional_council")
+    .slice()
+    .sort((a, b) => (a.district ?? 0) - (b.district ?? 0));
 
   const governor = governorRef ? await getRace(governorRef.slug, lang) : null;
   const results = governor
@@ -28,6 +32,10 @@ async function ResultsBody({ lang }: { lang: Lang }) {
         district: governor.district,
       })
     : null;
+  const showStandings =
+    results &&
+    (results.status === "live" || results.status === "cached") &&
+    Object.keys(results.byBallot).length > 0;
 
   return (
     <>
@@ -61,38 +69,49 @@ async function ResultsBody({ lang }: { lang: Lang }) {
         </p>
       )}
 
-      <section className="rise d3 block">
-        <h2>{d.resultsPage.vuc}</h2>
-
-        {governor && (
-          <div className="results-race">
-            <header>
-              <h3>{d.resultsPage.governor}</h3>
-              <Link href={`/${lang}/volby/${governor.slug}`}>
-                {d.resultsPage.openRace} →
-              </Link>
-            </header>
-            <div className="race glass">
-              <RaceTable lang={lang} race={governor} results={results} />
-            </div>
-            <p className="legend">{d.race.ballotOrder}</p>
+      <section className="results-section rise d3">
+        <header className="results-section-head">
+          <div>
+            <p className="eyebrow">{d.resultsPage.vuc}</p>
+            <h2>{d.resultsPage.governor}</h2>
           </div>
+          {governor && (
+            <Link href={`/${lang}/volby/${governor.slug}`}>
+              {d.resultsPage.openRace} →
+            </Link>
+          )}
+        </header>
+        {governor && showStandings ? (
+          <div className="standings-panel glass">
+            <ResultsStandings lang={lang} race={governor} results={results} />
+          </div>
+        ) : (
+          <p className="empty">{d.race.counting}</p>
         )}
+        <p className="legend">{d.race.ballotOrder}</p>
+      </section>
 
-        <div className="results-council">
-          <h3>{d.resultsPage.council}</h3>
-          <p className="lede tight">{d.resultsPage.councilHint}</p>
-          <div className="regional-cards">
-            {councils.map((r) => (
-              <RaceCard key={r.slug} lang={lang} race={r} />
-            ))}
+      <section className="results-section rise d3">
+        <header className="results-section-head">
+          <div>
+            <h2>{d.resultsPage.council}</h2>
+            <p className="lede tight">{d.resultsPage.councilHint}</p>
           </div>
+        </header>
+        <div className="regional-cards">
+          {councils.map((r) => (
+            <RaceCard key={r.slug} lang={lang} race={r} heading="place" />
+          ))}
         </div>
       </section>
 
-      <section className="rise d3 block">
-        <h2>{d.resultsPage.municipal}</h2>
-        <p className="lede tight">{d.resultsPage.municipalHint}</p>
+      <section className="results-section rise d3">
+        <header className="results-section-head">
+          <div>
+            <h2>{d.resultsPage.municipal}</h2>
+            <p className="lede tight">{d.resultsPage.municipalHint}</p>
+          </div>
+        </header>
         <p>
           <Link className="pillbtn glass" href={`/${lang}/kandidati`}>
             {d.resultsPage.openMunicipal} →
