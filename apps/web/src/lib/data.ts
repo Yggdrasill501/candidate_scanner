@@ -27,6 +27,14 @@ export const NSK_DISTRICTS: Record<string, number[]> = {
   "Zlaté Moravce": [8],
 };
 
+/** Okres name for an NSK council electoral district number (1–8). */
+export function okresForNskDistrict(n: number): string | null {
+  for (const [okres, nums] of Object.entries(NSK_DISTRICTS)) {
+    if (nums.includes(n)) return okres;
+  }
+  return null;
+}
+
 function cached(...tags: string[]) {
   cacheLife("hours");
   cacheTag("data", ...tags);

@@ -1,9 +1,13 @@
 import Link from "next/link";
-import type { Race, RaceRef } from "@/lib/data";
+import { okresForNskDistrict, type Race, type RaceRef } from "@/lib/data";
 import { formatNumber, t, type Lang } from "@/lib/i18n";
 import type { RaceResults } from "@/lib/results";
 
-/** "Primátor · Nitra", "Poslanci obce · Nitra, volebný obvod 3", "Poslanci NSK · volebný obvod 2". */
+/**
+ * "Primátor · Nitra", "Poslanci obce · Nitra, volebný obvod 3",
+ * "Okres Nitra" + "volebný obvod 3" for NSK council (okres name is the human label;
+ * the official ŠÚ name is only the numbered obvod).
+ */
 export function raceTitle(
   lang: Lang,
   r: RaceRef,
@@ -12,8 +16,16 @@ export function raceTitle(
   const district = r.district ? d.district(r.district) : "";
   if (r.kind === "regional_governor")
     return { name: d.kind.regional_governor, where: d.wholeRegion };
-  if (r.kind === "regional_council")
-    return { name: d.kind.regional_council, where: district };
+  if (r.kind === "regional_council") {
+    const okres =
+      r.district != null ? okresForNskDistrict(r.district) : null;
+    return {
+      name: okres
+        ? `${t(lang).ballot.district} ${okres}`
+        : d.kind.regional_council,
+      where: district,
+    };
+  }
   return {
     name: `${d.kind[r.kind]} · ${r.municipality ?? ""}`,
     where: [
@@ -203,8 +215,9 @@ export function RaceCard({
   const d = t(lang);
   const title = raceTitle(lang, race);
   const empty = race.candidates === 0;
-  const main = heading === "place" && title.where ? title.where : title.name;
-  const sub = heading === "place" ? null : title.where || null;
+  // place: okres (or municipality) as the title, obvod number underneath
+  const main = title.name;
+  const sub = title.where || null;
   const body = (
     <>
       {heading === "race" && (
