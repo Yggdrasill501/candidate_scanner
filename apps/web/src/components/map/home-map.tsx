@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import type { SearchHit } from "@repo/contract";
@@ -175,7 +176,7 @@ export function HomeMap({
         </div>
         <div className="chips rise d5" aria-label={d.tipDistrict}>
           {okresy.map(([name, n]) => (
-            <a
+            <Link
               key={name}
               className={classes("chip", "glass", hoverOk === name && "on")}
               href={resultsFor(lang, t(lang).search.okres(name))}
@@ -183,7 +184,7 @@ export function HomeMap({
               onMouseLeave={() => map.current?.hover(null)}
             >
               {name} <small>{n}</small>
-            </a>
+            </Link>
           ))}
         </div>
       </section>
