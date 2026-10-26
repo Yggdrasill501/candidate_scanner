@@ -101,4 +101,4 @@ The Next.js version in this repo is newer than most documentation and models kno
 
 ## License
 
-By contributing you agree that your contributions are licensed under the [MIT License](LICENSE).
+By contributing you agree that your contributions are licensed under the [GNU Affero General Public License v3.0](LICENSE).

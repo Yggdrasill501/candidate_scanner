@@ -7,7 +7,7 @@
 Neutral, source-linked profiles of all 5,458 candidates in the 24 October 2026 Slovak municipal and regional elections in the Nitra region. Every fact links to its public source and to an immutable snapshot of what that source said.
 
 [![CI](https://github.com/Yggdrasill501/candidate_scanner/actions/workflows/ci.yml/badge.svg)](https://github.com/Yggdrasill501/candidate_scanner/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 [![Good first issues](https://img.shields.io/github/issues/Yggdrasill501/candidate_scanner/good%20first%20issue?label=good%20first%20issues&color=7057ff)](https://github.com/Yggdrasill501/candidate_scanner/labels/good%20first%20issue)
 <br>
@@ -166,6 +166,6 @@ Found a wrong fact about a candidate? Open a [data correction](https://github.co
 
 ## License
 
-Code is released under the [MIT License](LICENSE). Candidate data comes from public Slovak registers and other sources listed in [`docs/sources.md`](docs/sources.md); it remains subject to each source's terms.
+Code is released under the [GNU Affero General Public License v3.0](LICENSE): you may use, change and redistribute it, and if you run a modified version as a public website, you must publish your source too. Candidate data comes from public Slovak registers and other sources listed in [`docs/sources.md`](docs/sources.md); it remains subject to each source's terms.
 
 <div align="center"><sub>Built in Nitra. Not affiliated with any party, candidate or public authority.</sub></div>
