@@ -1,6 +1,12 @@
 {
   "name": "koho-volim",
   "private": true,
+  "description": "Neutral, source-linked profiles of every candidate in the 2026 Slovak local elections in the Nitra region",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Yggdrasill501/candidate_scanner.git"
+  },
   "packageManager": "pnpm@11.28.8",
   "engines": {
     "node": ">=24"

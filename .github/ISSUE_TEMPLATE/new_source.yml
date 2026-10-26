@@ -1,0 +1,46 @@
+name: New data source
+description: Propose a public source to collect, or claim one from the roadmap.
+title: "[source] "
+labels: [source, enhancement]
+body:
+  - type: input
+    id: name
+    attributes:
+      label: Source
+      placeholder: CRZ, REPLIK, a town's contract register...
+    validations:
+      required: true
+  - type: textarea
+    id: access
+    attributes:
+      label: Access
+      description: URL or API, format, rate limits, what robots.txt and the terms allow.
+    validations:
+      required: true
+  - type: textarea
+    id: identity
+    attributes:
+      label: Identity signals
+      description: What links a record to a candidate besides the name? (municipality, birth year, IČO, body membership)
+    validations:
+      required: true
+  - type: textarea
+    id: coverage
+    attributes:
+      label: Coverage
+      description: Which candidates can it cover? A source that covers only some candidates needs a note on the page saying so.
+  - type: checkboxes
+    id: rules
+    attributes:
+      label: Rules
+      options:
+        - label: The source is public and free to access without logging in.
+          required: true
+        - label: I will store only what the source says, with a snapshot, and no private identifiers.
+          required: true
+  - type: checkboxes
+    id: claim
+    attributes:
+      label: Contribution
+      options:
+        - label: I would like to build this stage.

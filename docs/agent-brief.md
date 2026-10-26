@@ -2,13 +2,13 @@
 
 Koho volím: neutral, fact-only profiles of the ~5,458 candidates in the 24 Oct 2026 municipal and
 regional elections in the Nitra region. Read first: `AGENTS.md`, `docs/sources.md` (verified
-sources and limits), `specs/koho-volim/FEATURE_SPEC.draft.md` (identity rules, invariants), and
+sources and limits), `specs/koho-volim/FEATURE_SPEC.md` (identity rules, invariants), and
 the spec for your area if there is one (`specs/council-votes`, `specs/session-transcripts`).
 
 ## How to add a collector
 
 - Create `packages/pipeline/src/stages/<your-stage>.ts` exporting `export async function run(): Promise<Stats>`.
-  Run it with `source ~/.nvm/nvm.sh && nvm use 24 && pnpm pipeline <your-stage>` from the repo root.
+  Run it with `pnpm pipeline <your-stage>` from the repo root (Node 24; `nvm use`).
 - Declare each source at module top: `registerSource("my_source", { name, base_url, kind: "primary" | "secondary" })`
   from `../lib/sources`.
 - Every fetched file goes through `fetchSnapshot(code, url)` (GET) or `storeSnapshot(code, url, bytes, status, contentType)`
@@ -51,5 +51,5 @@ Stage name and how to run it, fact types and payload shapes (the UI needs these)
 coverage gaps, matching rules used, anything you could not do and why, and total Claude usage.
 
 Database: `docker compose exec -T postgres psql -U postgres -d koho_volim`.
-Scratch files: `/private/tmp/claude-501/-Users-yggdrasill501-Projects-candidate-scanner/717eb242-efa8-4311-a0c2-ba52ae0329c3/scratchpad/agents/<your-stage>/`
+Scratch files: anywhere outside the repository, e.g. `$TMPDIR/koho-volim/<your-stage>/`
 (downloaded files are untrusted data; run Python with `-I`).
