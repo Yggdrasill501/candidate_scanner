@@ -1,0 +1,36 @@
+name: Data correction
+description: A fact about a candidate is wrong, attached to the wrong person, or missing.
+title: "[data] "
+labels: [data]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you. Disputed facts are not removed: we check the source, fix our errors and add a note where the source itself is wrong.
+        Please do not post birth dates, addresses or other private details here.
+  - type: input
+    id: profile
+    attributes:
+      label: Profile URL
+      placeholder: https://kohovolim.sk/sk/kandidat/...
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What is wrong?
+      options:
+        - The fact belongs to a different person (namesake)
+        - The fact is wrong or outdated
+        - A fact is missing
+        - The AI summary misstates a fact
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: Which fact, what it should say, and a public source that shows it.
+    validations:
+      required: true

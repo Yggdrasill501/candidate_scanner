@@ -12,7 +12,7 @@ Turborepo and pnpm (workspaces + catalog); Next.js (App Router), React and Tailw
 | `packages/db`       | Kysely client (`db`), migrations, generated `src/schema.ts`. |
 | `packages/contract` | Types shared between apps. No runtime dependencies.          |
 | `packages/pipeline` | Batch data pipelines (`pnpm pipeline [stage...]`).           |
-| `specs/`            | Feature specs (`FEATURE_SPEC.draft.md` until reviewed).      |
+| `specs/`            | Feature specs (`<feature>/FEATURE_SPEC.md`).                 |
 | `docs/sources.md`   | Verified public data sources and their limits.               |
 
 Internal packages are named `@repo/<name>`, export TypeScript source directly (`"exports": { ".": "./src/index.ts" }`) and have no build step.
@@ -34,7 +34,7 @@ One `.env` at the repository root, copied from `.env.example`. `apps/web/next.co
 - Every fetched file is stored content-addressed under `data/snapshots` (gitignored) and recorded in `source_snapshot`; facts point at their snapshot. Never modify or delete snapshots.
 - The website only reads the database. Pipelines are the only writers of candidate data.
 - Linking by name always stores a `match_reason`; ambiguous matches link to every candidate. Birth dates and street addresses from registers are used for matching only and are never stored on public-facing rows.
-- Read `specs/koho-volim/FEATURE_SPEC.draft.md` before changing what is shown about candidates: neutrality rules (ballot order, no rankings, nothing hidden) are invariants.
+- Read `specs/koho-volim/FEATURE_SPEC.md` before changing what is shown about candidates: neutrality rules (ballot order, no rankings, nothing hidden) are invariants.
 
 ## Commands
 

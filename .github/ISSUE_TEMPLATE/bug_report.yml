@@ -1,0 +1,35 @@
+name: Bug report
+description: Something on the site or in the pipeline does not work.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open /sk/volby/...
+        2. ...
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options: [Website, Pipeline, Database, CI / tooling]
+    validations:
+      required: true
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: Browser and device, or OS / Node version and the command you ran.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots
+      render: shell

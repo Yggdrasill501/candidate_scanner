@@ -1,0 +1,22 @@
+name: Feature request
+description: Suggest an improvement to the site or the pipeline.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What is hard to do or find today, and for whom?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+  - type: checkboxes
+    id: neutrality
+    attributes:
+      label: Neutrality
+      options:
+        - label: This does not rank, score, sort or characterise candidates, and treats every candidate in a race the same way.
+          required: true
