@@ -3,7 +3,7 @@ packages:
   - packages/*
 
 catalog:
-  "@types/node": ^24
+  "@types/node": ^26
   typescript: ^5
 
 allowBuilds:
